@@ -1,0 +1,77 @@
+/* 全局样式 */
+* {
+  box-sizing: border-box;
+}
+
+.page-container {
+  padding: 20px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.mb-20 {
+  margin-bottom: 20px;
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 大屏样式 */
+.dashboard-container {
+  background-color: #0f1c3c;
+  color: #fff;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.dashboard-card {
+  background-color: rgba(13, 34, 65, 0.7);
+  border: 1px solid rgba(84, 110, 122, 0.3);
+  border-radius: 4px;
+}
+
+.dashboard-title {
+  font-size: 18px;
+  color: #fff;
+  margin-bottom: 20px;
+  padding-left: 10px;
+  border-left: 4px solid #409eff;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
