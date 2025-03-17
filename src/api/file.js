@@ -1,5 +1,5 @@
 import http from './http'
-import { API_PATHS } from './config'
+import {API_PATHS} from './config'
 
 export const fileApi = {
     // 上传Excel文件
@@ -36,5 +36,16 @@ export const fileApi = {
             params,
             responseType: 'blob'
         })
-    }
+    },
+
+
+    // 获取导入历史记录
+    getImportHistory(params) {
+        return http.get('/api/import/history', {params})
+    },
+
+    // 删除导入历史记录
+    deleteImportHistory(id) {
+        return http.delete(`/api/import/history/${id}`)
+    },
 }

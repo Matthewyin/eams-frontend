@@ -7,23 +7,23 @@
           <span>Excel文件导入</span>
         </div>
       </template>
-      
+
       <div class="upload-area" @click="triggerFileInput" @dragover.prevent @drop.prevent="onFileDrop">
         <input
-          type="file"
-          ref="fileInputRef"
-          accept=".xlsx,.xls"
-          style="display: none"
-          @change="onFileSelected"
+            type="file"
+            ref="fileInputRef"
+            accept=".xlsx,.xls"
+            style="display: none"
+            @change="onFileSelected"
         />
-        
+
         <el-icon class="upload-icon"><Upload /></el-icon>
         <div class="upload-text">
           <p>点击或拖拽文件到此区域上传</p>
           <p class="upload-hint">支持 .xlsx, .xls 格式的Excel文件</p>
         </div>
       </div>
-      
+
       <!-- 文件预览 -->
       <div v-if="selectedFile" class="file-preview">
         <div class="file-info">
@@ -31,53 +31,53 @@
           <span class="file-name">{{ selectedFile.name }}</span>
           <span class="file-size">({{ formatFileSize(selectedFile.size) }})</span>
         </div>
-        
+
         <el-button type="danger" link @click="removeFile">
           <el-icon><Delete /></el-icon>
         </el-button>
       </div>
-      
+
       <!-- 错误提示 -->
       <div v-if="errorMessage" class="error-message">
         <el-icon><Warning /></el-icon>
         <span>{{ errorMessage }}</span>
       </div>
-      
+
       <!-- 操作按钮 -->
       <div class="upload-actions">
         <el-button
-          type="primary"
-          @click="startUpload"
-          :disabled="!selectedFile || isProcessing"
-          :loading="isProcessing"
+            type="primary"
+            @click="startUpload"
+            :disabled="!selectedFile || isProcessing"
+            :loading="isProcessing"
         >
           {{ isProcessing ? '处理中...' : '开始导入' }}
         </el-button>
-        
+
         <el-button
-          @click="removeFile"
-          :disabled="!selectedFile || isProcessing"
+            @click="removeFile"
+            :disabled="!selectedFile || isProcessing"
         >
           清空
         </el-button>
       </div>
-      
+
       <!-- 进度条 -->
       <el-progress
-        v-if="uploadProgress > 0 || isProcessing"
-        :percentage="uploadProgress"
-        :status="uploadStatus === 'success' ? 'success' : uploadStatus === 'exception' ? 'exception' : ''"
-        :indeterminate="uploadStatus === 'processing'"
-        :stroke-width="10"
+          v-if="uploadProgress > 0 || isProcessing"
+          :percentage="uploadProgress"
+          :status="uploadStatus === 'success' ? 'success' : uploadStatus === 'exception' ? 'exception' : ''"
+          :indeterminate="uploadStatus === 'processing'"
+          :stroke-width="10"
       />
-      
+
       <div v-if="uploadStatus === 'processing'" class="progress-text">
         正在处理数据，请稍候...
       </div>
     </el-card>
-    
+
     <!-- 导入历史记录 -->
-    <el-card class="history-card">
+    <el-card class="history-card" v-loading="historyLoading">
       <template #header>
         <div class="card-header">
           <span>导入历史记录</span>
@@ -87,8 +87,10 @@
           </el-button>
         </div>
       </template>
-      
-      <el-table :data="importHistory" stripe style="width: 100%">
+
+      <el-empty v-if="importHistory.length === 0" description="暂无导入记录" />
+
+      <el-table v-else :data="importHistory" stripe style="width: 100%">
         <el-table-column prop="fileName" label="文件名" min-width="200" />
         <el-table-column prop="importTime" label="导入时间" width="180" />
         <el-table-column prop="status" label="状态" width="100">
@@ -102,24 +104,37 @@
         <el-table-column prop="message" label="消息" min-width="200" show-overflow-tooltip />
         <el-table-column label="操作" width="150">
           <template #default="scope">
-            <el-button 
-              v-if="scope.row.status === 'SUCCESS'"
-              type="primary" 
-              link 
-              @click="downloadResult(scope.row.id)"
+            <el-button
+                v-if="scope.row.status === 'SUCCESS'"
+                type="primary"
+                link
+                @click="downloadResult(scope.row.id)"
             >
               下载结果
             </el-button>
-            <el-button 
-              type="danger" 
-              link 
-              @click="deleteHistory(scope.row.id)"
+            <el-button
+                type="danger"
+                link
+                @click="deleteHistory(scope.row.id)"
             >
               删除
             </el-button>
           </template>
         </el-table-column>
       </el-table>
+
+      <!-- 分页 -->
+      <div class="pagination-container" v-if="importHistory.length > 0">
+        <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :page-sizes="[10, 20, 50]"
+            :total="total"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+        />
+      </div>
     </el-card>
   </div>
 </template>
@@ -137,8 +152,12 @@ const isProcessing = ref(false)
 const uploadProgress = ref(0)
 const uploadStatus = ref('') // 'uploading', 'processing', 'success', 'exception'
 
-// 导入历史记录
+// 导入历史记录相关
 const importHistory = ref([])
+const historyLoading = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
 
 // 触发文件选择
 const triggerFileInput = () => {
@@ -168,20 +187,20 @@ const validateAndSetFile = (file) => {
     'application/vnd.ms-excel',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   ]
-  
+
   const fileExt = file.name.split('.').pop().toLowerCase()
-  
+
   if (!validTypes.includes(file.type) && !['xls', 'xlsx'].includes(fileExt)) {
     errorMessage.value = '只支持Excel文件格式(.xlsx, .xls)'
     return
   }
-  
+
   // 验证文件大小 (10MB)
   if (file.size > 10 * 1024 * 1024) {
     errorMessage.value = '文件大小不能超过10MB'
     return
   }
-  
+
   selectedFile.value = file
   errorMessage.value = ''
   uploadProgress.value = 0
@@ -200,13 +219,13 @@ const removeFile = () => {
 // 开始上传
 const startUpload = async () => {
   if (!selectedFile.value) return
-  
+
   try {
     isProcessing.value = true
     uploadProgress.value = 0
     uploadStatus.value = 'uploading'
     errorMessage.value = ''
-    
+
     // 创建临时记录
     const tempRecord = {
       id: Date.now().toString(),
@@ -216,37 +235,37 @@ const startUpload = async () => {
       count: 0,
       message: '正在处理...'
     }
-    
+
     // 添加到历史记录
     importHistory.value.unshift(tempRecord)
-    
+
     // 上传文件
     const res = await fileApi.uploadExcel(selectedFile.value, {
       onProgress: (progress) => {
         uploadProgress.value = progress
       }
     })
-    
+
     // 上传完成，开始轮询进度
     uploadStatus.value = 'processing'
     uploadProgress.value = 100
-    
+
     // 轮询导入进度
     const taskId = res.taskId
     const pollInterval = 2000 // 2秒
     let pollCount = 0
     const maxPollCount = 30 // 最多轮询30次
-    
+
     const pollProgress = async () => {
       if (pollCount >= maxPollCount) {
         throw new Error('导入处理超时，请稍后查看结果')
       }
-      
+
       pollCount++
-      
+
       try {
         const progressRes = await fileApi.getImportProgress(taskId)
-        
+
         // 更新历史记录
         const index = importHistory.value.findIndex(item => item.id === tempRecord.id)
         if (index !== -1) {
@@ -255,7 +274,7 @@ const startUpload = async () => {
             ...progressRes
           }
         }
-        
+
         // 如果还在处理中，继续轮询
         if (progressRes.status === 'PROCESSING') {
           setTimeout(pollProgress, pollInterval)
@@ -263,13 +282,15 @@ const startUpload = async () => {
           // 处理完成
           uploadStatus.value = progressRes.status === 'SUCCESS' ? 'success' : 'exception'
           isProcessing.value = false
-          
+
           if (progressRes.status === 'SUCCESS') {
             ElMessage.success('导入成功')
+            // 刷新历史记录
+            fetchImportHistory()
           } else {
             ElMessage.error(progressRes.message || '导入失败')
           }
-          
+
           clearFile()
           errorMessage.value = '' // 清除可能存在的错误信息
         }
@@ -301,10 +322,10 @@ const startUpload = async () => {
         }
       }
     }
-    
+
     // 开始轮询
     setTimeout(pollProgress, pollInterval)
-    
+
   } catch (error) {
     errorMessage.value = error.message
     uploadStatus.value = 'exception'
@@ -315,44 +336,72 @@ const startUpload = async () => {
 // 格式化文件大小
 const formatFileSize = (bytes) => {
   if (bytes === 0) return '0 B'
-  
+
   const k = 1024
   const sizes = ['B', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-  
+
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
 // 获取导入历史记录
 const fetchImportHistory = async () => {
+  historyLoading.value = true
   try {
-    // 这里应该调用获取历史记录的API
-    // 由于没有具体API，这里模拟一些数据
-    const res = [
-      {
-        id: '1',
-        fileName: 'assets_2023.xlsx',
-        importTime: '2023-11-20 10:30:45',
-        status: 'SUCCESS',
-        count: 120,
-        message: '导入成功'
-      },
-      {
-        id: '2',
-        fileName: 'new_assets.xlsx',
-        importTime: '2023-11-19 15:20:10',
-        status: 'FAILED',
-        count: 0,
-        message: '文件格式错误'
+    // 调用API获取历史记录，传入分页参数
+    const params = {
+      page: currentPage.value,
+      pageSize: pageSize.value
+    }
+
+    // 调用后端API获取导入历史记录
+    const response = await fileApi.getImportHistory(params)
+
+    // 如果后端未启动或返回数据为空，使用模拟数据
+    if (!response || !response.data) {
+      // 模拟数据 - 实际项目中应删除此部分
+      const mockData = {
+        data: [
+          {
+            id: '1',
+            fileName: 'assets_2023.xlsx',
+            importTime: '2023-11-20 10:30:45',
+            status: 'SUCCESS',
+            count: 120,
+            message: '导入成功'
+          },
+          {
+            id: '2',
+            fileName: 'new_assets.xlsx',
+            importTime: '2023-11-19 15:20:10',
+            status: 'FAILED',
+            count: 0,
+            message: '文件格式错误'
+          }
+        ],
+        total: 2
       }
-    ]
-    
-    // 合并现有的处理中记录
+
+      importHistory.value = mockData.data
+      total.value = mockData.total
+    } else {
+      // 使用后端返回的真实数据
+      importHistory.value = response.data
+      total.value = response.total
+    }
+
+    // 保留处理中的记录
     const processingRecords = importHistory.value.filter(item => item.status === 'PROCESSING')
-    importHistory.value = [...processingRecords, ...res]
+    if (processingRecords.length > 0) {
+      // 如果有处理中的记录，将其添加到列表顶部
+      const filteredHistory = importHistory.value.filter(item => item.status !== 'PROCESSING')
+      importHistory.value = [...processingRecords, ...filteredHistory]
+    }
   } catch (error) {
     console.error('获取导入历史记录失败:', error)
     ElMessage.error('获取历史记录失败')
+  } finally {
+    historyLoading.value = false
   }
 }
 
@@ -360,7 +409,7 @@ const fetchImportHistory = async () => {
 const downloadResult = async (id) => {
   try {
     const res = await fileApi.getImportResult(id)
-    
+
     // 创建下载链接
     const blob = new Blob([res], { type: 'application/vnd.ms-excel' })
     const link = document.createElement('a')
@@ -380,11 +429,28 @@ const deleteHistory = (id) => {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
-  }).then(() => {
-    // 这里应该调用删除API
-    // 由于没有具体API，这里直接从本地数组中删除
-    importHistory.value = importHistory.value.filter(item => item.id !== id)
-    ElMessage.success('删除成功')
+  }).then(async () => {
+    try {
+      // 调用后端API删除记录
+      await fileApi.deleteImportHistory(id)
+
+      // 从本地列表中移除
+      importHistory.value = importHistory.value.filter(item => item.id !== id)
+
+      // 如果当前页没有数据了，且不是第一页，则返回上一页
+      if (importHistory.value.length === 0 && currentPage.value > 1) {
+        currentPage.value--
+        fetchImportHistory()
+      } else if (total.value > 0) {
+        // 更新总数
+        total.value--
+      }
+
+      ElMessage.success('删除成功')
+    } catch (error) {
+      console.error('删除记录失败:', error)
+      ElMessage.error('删除记录失败')
+    }
   }).catch(() => {})
 }
 
@@ -414,6 +480,19 @@ const clearFile = () => {
   fileInputRef.value.value = ''
   uploadProgress.value = 0
   uploadStatus.value = ''
+}
+
+// 处理页码变化
+const handleCurrentChange = (page) => {
+  currentPage.value = page
+  fetchImportHistory()
+}
+
+// 处理每页条数变化
+const handleSizeChange = (size) => {
+  pageSize.value = size
+  currentPage.value = 1 // 重置为第一页
+  fetchImportHistory()
 }
 
 // 初始化
@@ -507,5 +586,9 @@ onMounted(() => {
   text-align: center;
   color: #909399;
 }
-</style>
 
+.pagination-container {
+  margin-top: 20px;
+  text-align: right;
+}
+</style>
