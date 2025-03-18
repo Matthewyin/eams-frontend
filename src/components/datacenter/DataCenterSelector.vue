@@ -1,7 +1,7 @@
 <template>
   <div class="data-center-selector">
     <el-radio-group v-model="selectedDcId" @change="handleDataCenterChange" size="large">
-      <el-radio-button v-for="dc in dataCenters" :key="dc.id" :label="dc.id">
+      <el-radio-button v-for="dc in dataCenters" :key="dc.id" :value="dc.id">
         {{ dc.name }}
       </el-radio-button>
     </el-radio-group>

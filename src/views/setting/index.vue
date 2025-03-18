@@ -90,9 +90,9 @@
             <div class="setting-item">
               <span class="setting-label">表格密度</span>
               <el-radio-group v-model="tableDensity" @change="setTableDensity">
-                <el-radio-button label="large">默认</el-radio-button>
-                <el-radio-button label="default">中等</el-radio-button>
-                <el-radio-button label="small">紧凑</el-radio-button>
+                <el-radio-button :value="'large'">默认</el-radio-button>
+                <el-radio-button :value="'default'">中等</el-radio-button>
+                <el-radio-button :value="'small'">紧凑</el-radio-button>
               </el-radio-group>
             </div>
           </div>
