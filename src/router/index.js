@@ -27,6 +27,12 @@ const routes = [
                 meta: { title: '资产管理', icon: 'Files' }
             },
             {
+                path: 'datacenter',
+                name: 'DataCenter',
+                component: () => import('@/views/datacenter/index.vue'),
+                meta: { title: '机房机柜管理', icon: 'OfficeBuilding' }
+            },
+            {
                 path: 'asset/:id',
                 name: 'AssetDetail',
                 component: () => import('@/views/asset/detail.vue'),
@@ -49,7 +55,8 @@ const routes = [
                 name: 'Setting',
                 component: () => import('@/views/setting/index.vue'),
                 meta: { title: '系统设置', icon: 'Setting' }
-            }
+            },
+
         ]
     },
     {
@@ -57,6 +64,12 @@ const routes = [
         name: 'BigScreen',
         component: () => import('@/views/big-screen/index.vue'),
         meta: { requiresAuth: true, title: '大屏展示' }
+    },
+    {
+        path: '/datacenter-screen',
+        name: 'DataCenterScreen',
+        component: () => import('@/views/datacenter/screen.vue'),
+        meta: { requiresAuth: true, title: '机房机柜大屏展示' }
     },
     {
         path: '/:pathMatch(.*)*',

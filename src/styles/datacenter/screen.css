@@ -1,0 +1,228 @@
+/* 数据中心机柜展示大屏样式 */
+
+.datacenter-screen {
+  min-height: 100vh;
+  background-color: #0f1726;
+  color: #fff;
+  padding: 0;
+  overflow: hidden;
+}
+
+.screen-content {
+  padding: 20px 30px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 80px); /* 减去header高度 */
+}
+
+/* 可视化区域样式 */
+.visualization-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin-top: 15px;
+}
+
+.full-height-row {
+  height: 100%;
+  flex: 1;
+  display: flex;
+}
+
+.layout-column, .details-column {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+:deep(.el-row) {
+  height: 100%;
+}
+
+/* 可视化卡片通用样式 */
+.visualization-card {
+  background-color: rgba(30, 41, 59, 0.8);
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-header {
+  padding: 15px 20px;
+  background-color: rgba(16, 24, 40, 0.5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #e2e8f0;
+}
+
+.card-content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* 机柜布局相关样式 */
+.cabinet-layout {
+  height: 100%;
+}
+
+.room-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cabinet-row {
+  display: flex;
+  align-items: center;
+}
+
+.row-label {
+  width: 60px;
+  font-weight: bold;
+  color: #e2e8f0;
+}
+
+.cabinets {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  flex: 1;
+}
+
+.cabinet-block {
+  position: relative;
+  height: 200px;
+  border-radius: 8px;
+  background-color: rgba(45, 55, 72, 0.6);
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cabinet-block:hover {
+  background-color: rgba(45, 55, 72, 0.8);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.cabinet-block.selected {
+  background-color: rgba(66, 153, 225, 0.3);
+  border-color: #3182ce;
+}
+
+.network-cabinet {
+  border-left: 4px solid #67c23a;
+}
+
+.server-cabinet {
+  border-left: 4px solid #409eff;
+}
+
+.cabinet-name {
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #e2e8f0;
+  font-size: 14px;
+  text-align: center;
+}
+
+.cabinet-usage {
+  position: relative;
+  flex: 1;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.usage-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: #67c23a;
+  transition: height 0.3s ease;
+}
+
+/* 机柜详情相关样式 */
+.cabinet-details {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.detail-label {
+  width: 70px;
+  color: #a0aec0;
+  font-size: 14px;
+}
+
+.detail-value {
+  flex: 1;
+  color: #e2e8f0;
+  font-size: 14px;
+}
+
+/* 设备列表样式 */
+.device-list {
+  margin-top: 20px;
+}
+
+.device-list h3 {
+  font-size: 16px;
+  margin-bottom: 15px;
+  color: #e2e8f0;
+  font-weight: normal;
+}
+
+:deep(.el-table) {
+  background-color: transparent;
+  color: #e2e8f0;
+}
+
+:deep(.el-table th),
+:deep(.el-table tr) {
+  background-color: transparent;
+  color: #e2e8f0;
+}
+
+:deep(.el-table td) {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+:deep(.el-table--border) {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+:deep(.el-table__row:hover > td) {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* 空状态样式 */
+.no-room-selected,
+.no-selection {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #a0aec0;
+}

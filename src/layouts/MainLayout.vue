@@ -3,7 +3,7 @@
     <!-- 侧边栏 -->
     <el-aside :width="sidebarCollapsed ? '64px' : '220px'" class="sidebar-container">
       <div class="logo-container">
-        <img src="@/assets/logo.png" alt="Logo" class="logo" v-if="!sidebarCollapsed" />
+        <img src="@/assets/logo-w.png" alt="Logo" class="logo" v-if="!sidebarCollapsed" />
         <img src="@/assets/logo-small.png" alt="Logo" class="logo-small" v-else />
       </div>
       
