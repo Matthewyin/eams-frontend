@@ -6,6 +6,9 @@ import ElementPlus from "element-plus"
 import "element-plus/dist/index.css"
 import * as ElementPlusIconsVue from "@element-plus/icons-vue"
 import "./styles/index.css"
+// Material Design Icons
+import 'material-icons/iconfont/material-icons.css'
+import '@mdi/font/css/materialdesignicons.min.css'
 
 const app = createApp(App)
 

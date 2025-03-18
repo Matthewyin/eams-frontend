@@ -27,23 +27,23 @@
 
       <!-- 机柜图表和信息 -->
       <div class="visualization-section">
-        <el-row :gutter="20" class="full-height-row">
+        <div class="responsive-layout">
           <!-- 机柜分布图 -->
-          <el-col :span="16" class="layout-column">
+          <div class="layout-section">
             <CabinetLayoutComponent 
               :current-room="currentRoom"
               :selected-cabinet-id="selectedCabinetId"
               @cabinet-select="selectCabinet"
             />
-          </el-col>
+          </div>
 
           <!-- 机柜详情和使用率 -->
-          <el-col :span="8" class="details-column">
+          <div class="details-section">
             <CabinetDetailsComponent 
               :selected-cabinet="selectedCabinet"
             />
-          </el-col>
-        </el-row>
+          </div>
+        </div>
       </div>
     </div>
   </div>

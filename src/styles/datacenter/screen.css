@@ -24,16 +24,47 @@
   margin-top: 15px;
 }
 
-.full-height-row {
-  height: 100%;
-  flex: 1;
+/* 新的响应式布局 */
+.responsive-layout {
   display: flex;
+  flex-wrap: nowrap;
+  height: 100%;
+  gap: 20px;
+  width: 100%;
 }
 
-.layout-column, .details-column {
+.layout-section {
+  flex: 1;
+  min-width: 0; /* 避免 flex 项目超出容器 */
   height: 100%;
   display: flex;
   flex-direction: column;
+}
+
+.details-section {
+  width: 400px; /* 固定宽度，但在这个宽度下还会压缩 */
+  min-width: 350px;
+  max-width: 400px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 1; /* 允许在需要时压缩 */
+}
+
+/* 响应式布局下的媒体查询 */
+@media (max-width: 1200px) {
+  .responsive-layout {
+    flex-wrap: wrap;
+  }
+  
+  .layout-section, .details-section {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .details-section {
+    margin-top: 20px;
+  }
 }
 
 :deep(.el-row) {

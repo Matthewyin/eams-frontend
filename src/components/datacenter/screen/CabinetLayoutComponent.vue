@@ -83,6 +83,8 @@ const getCabinetRemainingUnits = (cabinet) => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  min-width: 0; /* 允许容器在必要时缩小 */
+  width: 100%; /* 确保容器能占满可用空间 */
 }
 
 .card-header {
@@ -97,7 +99,7 @@ const getCabinetRemainingUnits = (cabinet) => {
 }
 
 .card-content {
-  padding: 20px;
+  padding: 25px;
   flex-grow: 1;
   overflow: hidden; /* 改为hidden，内部元素自行处理滚动 */
 }
@@ -132,18 +134,20 @@ const getCabinetRemainingUnits = (cabinet) => {
   flex-grow: 1;
   overflow-x: auto;
   margin-left: 10px;
+  width: 100%;
 }
 
 .cabinets {
   display: inline-flex;
-  gap: 10px;
-  padding-bottom: 10px; /* 为滚动条留出空间 */
+  gap: 18px;
+  padding-bottom: 15px; /* 为滚动条留出空间 */
   min-width: min-content; /* 确保内容不会收缩小于实际大小 */
+  flex-wrap: wrap; /* 允许在较窄屏幕上换行 */
 }
 
 .cabinet-block {
-  min-width: 60px;
-  height: 120px;
+  min-width: 100px;
+  height: 160px;
   background-color: rgba(50, 50, 50, 0.5);
   border-radius: 5px;
   cursor: pointer;
@@ -153,6 +157,8 @@ const getCabinetRemainingUnits = (cabinet) => {
   display: flex;
   flex-direction: column;
   flex-shrink: 0; /* 防止压缩 */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  margin-bottom: 5px; /* 添加底部边距，防止在换行时贴得太近 */
 }
 
 .cabinet-block:hover {
@@ -166,20 +172,23 @@ const getCabinetRemainingUnits = (cabinet) => {
 }
 
 .network-cabinet {
-  background-color: rgba(103, 194, 58, 0.2);
+  background-color: rgba(103, 194, 58, 0.3);
+  min-width: 110px;
 }
 
 .server-cabinet {
-  background-color: rgba(64, 158, 255, 0.2);
+  background-color: rgba(64, 158, 255, 0.3);
+  min-width: 110px;
 }
 
 .cabinet-name {
-  font-size: 12px;
+  font-size: 14px;
   text-align: center;
-  padding: 5px;
+  padding: 10px;
   color: #fff;
-  background-color: rgba(0, 0, 0, 0.3);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(0, 0, 0, 0.4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  font-weight: 500;
 }
 
 .cabinet-info {
@@ -188,21 +197,25 @@ const getCabinetRemainingUnits = (cabinet) => {
   justify-content: center;
   align-items: center;
   flex-grow: 1;
-  padding: 5px;
+  padding: 12px;
+  background-color: rgba(0, 0, 0, 0.25);
+  margin-top: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .cabinet-type {
-  font-size: 11px;
-  color: #a0aec0;
-  margin-bottom: 5px;
+  font-size: 13px;
+  color: #b5c6df;
+  margin-bottom: 8px;
   text-align: center;
 }
 
 .cabinet-remaining {
-  font-size: 12px;
+  font-size: 14px;
   color: #67c23a;
   font-weight: bold;
   text-align: center;
+  text-shadow: 0 0 3px rgba(103, 194, 58, 0.3);
 }
 
 

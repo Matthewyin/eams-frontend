@@ -12,94 +12,57 @@
 
     <div class="card-content">
       <div v-if="selectedCabinet" class="cabinet-details">
-        <div class="detail-layout">
-          <!-- 设备详情面板 -->
-          <div class="device-details-panel" v-if="selectedDevice">
-            <div class="panel-header">
-              <h3>
-                <el-tag size="small" :type="getDeviceTypeColor(selectedDevice.type)">
-                  {{ getDeviceTypeName(selectedDevice.type) }}
-                </el-tag>
-                {{ selectedDevice.name }}
-              </h3>
-              <el-button circle size="small" @click="selectedDevice = null">
-                <i class="el-icon-close"></i>
-              </el-button>
+        <!-- 使用新的设备对话框组件 -->
+        <device-dialog-component 
+          v-if="selectedDevice"
+          v-model:visible="showDeviceDialog"
+          :device="selectedDevice"
+          @close="closeDeviceDialog"
+        />
+        
+        <!-- 设备悬停提示组件 -->
+        <device-tooltip-component
+          :device="hoveredDevice"
+          :visible="!!hoveredDevice"
+          :position="mousePosition"
+        />
+
+        <!-- 机柜U位图 -->
+        <div class="u-rack-container">
+          <!-- 背景U位网格 -->
+          <div class="u-rack-background">
+            <div v-for="u in totalUs" :key="u" class="u-position-bg">
+              <div class="u-number">{{ totalUs + 1 - u }}U</div>
             </div>
-            <div class="panel-content">
-              <div class="device-detail-row">
-                <span class="device-detail-label">位置：</span>
-                <span class="device-detail-value strong">{{ formatUPosition(selectedDevice) }}</span>
-              </div>
-              <div class="device-detail-row">
-                <span class="device-detail-label">占用空间：</span>
-                <span class="device-detail-value">{{ selectedDevice.size }}U</span>
-              </div>
-              <div class="device-detail-row">
-                <span class="device-detail-label">状态：</span>
-                <span class="device-detail-value">
-                  <el-tag size="small" type="success">运行中</el-tag>
-                </span>
-              </div>
-              <div class="device-detail-row">
-                <span class="device-detail-label">索引号：</span>
-                <span class="device-detail-value">{{ selectedDevice.id }}</span>
+          </div>
+          
+          <!-- 设备块层 -->
+          <div class="u-rack-devices">
+            <!-- 空U位占位 -->
+            <div class="empty-space" :style="{ height: '100%' }"></div>
+            
+            <!-- 设备块 -->
+            <div 
+              v-for="device in devices" 
+              :key="device.id"
+              class="device-block"
+              :class="[
+                `device-type-${device.type}`,
+                { 'device-selected': selectedDevice?.id === device.id },
+                { 'device-hovered': hoveredDevice?.id === device.id }
+              ]"
+              :style="getDeviceBlockStyle(device)"
+              @click="selectDevice(device)"
+              @mouseover="hoverDevice(device, $event)"
+              @mouseleave="hoverDevice(null, $event)"
+              @mousemove="hoverDevice(device, $event)"
+            >
+              <div class="device-block-inner">
+                <div class="device-name">{{ device.name }}</div>
+                <div class="device-type">{{ getDeviceTypeName(device.type) }}</div>
               </div>
             </div>
           </div>
-
-          <!-- 机柜U位图 -->
-          <div class="u-position-view">
-            <h3 class="section-title">机柜U位图</h3>
-            <!-- 使用table布局确保稳定的宽度 -->
-            <table class="u-rack">
-              <tbody>
-                <tr v-for="u in 42" :key="u" 
-                  @click="selectDeviceAtPosition(selectedCabinet, 43 - u)"
-                  @mouseover="hoverDeviceAtPosition(selectedCabinet, 43 - u)"
-                  @mouseleave="hoveredDevice = null"
-                  class="u-position-row"
-                >
-                  <!-- 如果这个U位被设备占用 -->
-                  <td v-if="isUPositionOccupied(selectedCabinet, 43 - u)" 
-                    class="u-cell device-cell"
-                    :style="getUPositionStyle(selectedCabinet, 43 - u)">
-                    <div class="u-number">{{ 43 - u }}U</div>
-                    <div class="u-device-info">{{ getUPositionDeviceName(selectedCabinet, 43 - u) }}</div>
-                  </td>
-                  <!-- 如果这个U位没有设备 -->
-                  <td v-else class="u-cell empty-cell">
-                    <div class="u-number">{{ 43 - u }}U</div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- 设备列表 -->
-        <div class="device-list">
-          <h3 class="section-title">设备列表</h3>
-          <el-table 
-            :data="getOccupiedDevices(selectedCabinet)" 
-            max-height="200" 
-            style="width: 100%;"
-            @row-click="row => selectDevice(row)"
-          >
-            <el-table-column label="位置" prop="position" width="70">
-              <template #default="scope">
-                {{ formatUPosition(scope.row) }}
-              </template>
-            </el-table-column>
-            <el-table-column label="设备类型" prop="type" width="100">
-              <template #default="scope">
-                <el-tag size="small" :type="getDeviceTypeColor(scope.row.type)">
-                  {{ getDeviceTypeName(scope.row.type) }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="设备名称" prop="name"></el-table-column>
-          </el-table>
         </div>
       </div>
       <div v-else class="no-selection">
@@ -110,7 +73,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import DeviceDialogComponent from './DeviceDialogComponent.vue';
+import DeviceTooltipComponent from './DeviceTooltipComponent.vue';
 
 const props = defineProps({
   selectedCabinet: {
@@ -122,176 +87,109 @@ const props = defineProps({
 // 用于存储当前选中的设备
 const selectedDevice = ref(null);
 
+// 控制弹窗显示
+const showDeviceDialog = ref(false);
+
 // 用于高亮显示指向的设备
 const hoveredDevice = ref(null);
 
-// 机柜使用率相关函数已移除
+// 鼠标位置
+const mousePosition = ref({ x: 0, y: 0 });
 
-// 检查指定U位是否被占用
-const isUPositionOccupied = (cabinet, uPosition) => {
-  if (!cabinet || !cabinet.devices) return false;
-  return cabinet.devices.some(device => {
-    const startU = device.position;
-    const endU = device.position + device.size - 1;
-    return uPosition >= startU && uPosition <= endU;
-  });
-};
-
-// 获取U位的设备名称
-const getUPositionDeviceName = (cabinet, uPosition) => {
-  if (!cabinet || !cabinet.devices) return '';
-  const device = cabinet.devices.find(device => {
-    const startU = device.position;
-    const endU = device.position + device.size - 1;
-    return uPosition >= startU && uPosition <= endU;
-  });
-  return device ? device.name : '';
-};
-
-// 检查U位是否被高亮显示
-const isUPositionHighlighted = (cabinet, uPosition) => {
-  if (!selectedDevice.value || !cabinet) return false;
-  const device = selectedDevice.value;
-  const startU = device.position;
-  const endU = device.position + device.size - 1;
-  return uPosition >= startU && uPosition <= endU;
-};
-
-// 在U位上选择设备
-const selectDeviceAtPosition = (cabinet, uPosition) => {
-  if (!cabinet || !cabinet.devices) return;
-  const device = cabinet.devices.find(device => {
-    const startU = device.position;
-    const endU = device.position + device.size - 1;
-    return uPosition >= startU && uPosition <= endU;
-  });
-  
-  if (device) {
-    if (selectedDevice.value === device) {
-      // 如果点击的是已经选中的设备，则取消选中
-      selectedDevice.value = null;
-    } else {
-      // 否则选中该设备
-      selectedDevice.value = device;
-    }
-  } else {
-    // 如果点击的是空闲U位，则取消当前选中
-    selectedDevice.value = null;
-  }
-};
+// 设备相关函数
 
 // 直接选择设备
 const selectDevice = (device) => {
-  if (selectedDevice.value === device) {
-    selectedDevice.value = null;
-  } else {
-    selectedDevice.value = device;
+  selectedDevice.value = device;
+  showDeviceDialog.value = true;
+};
+
+// 鼠标悬停在设备上
+const hoverDevice = (device, event) => {
+  hoveredDevice.value = device;
+  if (event) {
+    mousePosition.value = {
+      x: event.clientX,
+      y: event.clientY
+    };
   }
 };
 
-// 鼠标悬停在U位上
-const hoverDeviceAtPosition = (cabinet, uPosition) => {
-  if (!cabinet || !cabinet.devices) return;
-  const device = cabinet.devices.find(device => {
-    const startU = device.position;
-    const endU = device.position + device.size - 1;
-    return uPosition >= startU && uPosition <= endU;
-  });
-  
-  if (device) {
-    hoveredDevice.value = device;
-  }
+// 关闭设备详情对话框
+const closeDeviceDialog = () => {
+  selectedDevice.value = null;
+  showDeviceDialog.value = false;
 };
 
-// 获取U位样式
-const getUPositionStyle = (cabinet, uPosition) => {
-  if (!cabinet || !cabinet.devices) return {};
-  const device = cabinet.devices.find(device => {
-    const startU = device.position;
-    const endU = device.position + device.size - 1;
-    return uPosition >= startU && uPosition <= endU;
-  });
-  
+// 获取机柜设备列表
+const devices = computed(() => {
+  return props.selectedCabinet?.devices || [];
+});
+
+// 获取机柜总U数
+const totalUs = computed(() => {
+  return props.selectedCabinet?.size || 42;
+});
+
+// 获取设备块样式
+const getDeviceBlockStyle = (device) => {
   if (!device) return {};
   
-  // 为不同类型的设备设置不同的背景色
-  const colorMap = {
-    'server': 'rgba(64, 158, 255, 0.8)',
-    'network': 'rgba(103, 194, 58, 0.8)',
-    'storage': 'rgba(230, 162, 60, 0.8)',
-    'security': 'rgba(245, 108, 108, 0.8)',
-    'other': 'rgba(144, 147, 153, 0.8)'
+  const position = device.position || 1;
+  const size = device.size || 1;
+  const totalRUs = totalUs.value || 42;
+  
+  // 固定每个RU的高度为33px
+  const uHeight = 33;
+  
+  // 计算设备块的位置，从上到下排列
+  const topPosition = (totalRUs - position - size + 1) * uHeight;
+  
+  return {
+    position: 'absolute',
+    top: `${topPosition}px`,
+    height: `${size * uHeight}px`,
+    left: '40px',
+    right: '2px',
+    backgroundColor: getDeviceBackgroundColor(device.type),
+    borderLeft: `4px solid ${getDeviceBorderColor(device.type)}`,
+    zIndex: 15
   };
-  
-  // 添加宽度100%的样式，确保设备背景填满整个机柜宽度
-  const style = {
-    backgroundColor: colorMap[device.type] || colorMap.other,
-    width: '100%',
-    margin: 0,
-    padding: 0,
-    boxSizing: 'border-box',
-  };
-  
-  // 为设备的第一个U位添加顶部边框
-  if (uPosition === device.position) {
-    style.borderTop = '2px solid rgba(255, 255, 255, 0.8)';
-  }
-  
-  // 为设备的最后一个U位添加底部边框
-  if (uPosition === device.position + device.size - 1) {
-    style.borderBottom = '2px solid rgba(255, 255, 255, 0.8)';
-  }
-  
-  // 为选中设备添加边框和阴影
-  if (selectedDevice.value === device) {
-    style.boxShadow = 'inset 0 0 0 3px #fff';
-  }
-  
-  // 为指向设备添加效果
-  if (hoveredDevice.value === device && selectedDevice.value !== device) {
-    style.filter = 'brightness(1.2)';
-    style.boxShadow = 'inset 0 0 0 2px rgba(255, 255, 255, 0.5)';
-  }
-  
-  return style;
 };
 
-// 获取设备类型对应的颜色
-const getDeviceTypeColor = (type) => {
-  const typeMap = {
-    'server': 'primary',
-    'network': 'success',
-    'storage': 'warning',
-    'security': 'danger',
-    'other': 'info'
-  };
-  
-  return typeMap[type] || 'info';
+// 获取设备类型对应的背景颜色
+const getDeviceBackgroundColor = (type) => {
+  switch (type) {
+    case 'server': return 'rgba(64, 158, 255, 0.2)';
+    case 'network': return 'rgba(103, 194, 58, 0.2)';
+    case 'storage': return 'rgba(230, 162, 60, 0.2)';
+    case 'power': return 'rgba(245, 108, 108, 0.2)';
+    default: return 'rgba(144, 147, 153, 0.2)';
+  }
+};
+
+// 获取设备类型对应的边框颜色
+const getDeviceBorderColor = (type) => {
+  switch (type) {
+    case 'server': return '#409EFF';
+    case 'network': return '#67C23A';
+    case 'storage': return '#E6A23C';
+    case 'power': return '#F56C6C';
+    default: return '#909399';
+  }
 };
 
 // 获取设备类型的中文名称
 const getDeviceTypeName = (type) => {
-  const typeNameMap = {
-    'server': '服务器',
-    'network': '网络设备',
-    'storage': '存储设备',
-    'security': '安全设备',
-    'other': '其他设备'
-  };
-  
-  return typeNameMap[type] || '未知设备';
+  switch (type) {
+    case 'server': return '服务器';
+    case 'network': return '网络设备';
+    case 'storage': return '存储设备';
+    case 'power': return '电源设备';
+    default: return '其他设备';
+  }
 };
 
-// 获取设备列表
-const getOccupiedDevices = (cabinet) => {
-  return cabinet && cabinet.devices ? cabinet.devices : [];
-};
-
-// 格式化设备U位范围显示
-const formatUPosition = (device) => {
-  if (!device || device.size <= 1) return `${device.position}U`;
-  return `${device.position}-${device.position + device.size - 1}U`;
-};
 </script>
 
 <style scoped>
@@ -302,6 +200,7 @@ const formatUPosition = (device) => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 /* 头部区域样式增强 */
@@ -340,24 +239,141 @@ const formatUPosition = (device) => {
   font-size: 14px;
 }
 
-
-
 .card-content {
   padding: 20px;
-  flex-grow: 1;
-  overflow: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .cabinet-details {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* U位图样式 */
+.u-rack-container {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  background-color: rgba(30, 39, 57, 0.5);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0 auto;
+}
+
+.u-rack-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(33px * 42); /* 固定总高度为42个RU */
+  z-index: 5;
+}
+
+.u-position-bg {
+  height: 33px; /* 固定每个RU的高度 */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+}
+
+.u-number {
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.85);
+  z-index: 6;
+  font-weight: 500;
+  background-color: rgba(30, 41, 59, 0.5);
+  padding: 1px 4px;
+  border-radius: 3px;
+  width: 36px;
+  text-align: center;
+}
+
+.u-rack-devices {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+}
+
+.device-block {
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.device-block:hover {
+  box-shadow: 0 0 0 2px #fff;
+  z-index: 25;
+}
+
+.device-block.device-selected {
+  box-shadow: 0 0 0 2px #409EFF, 0 0 10px rgba(64, 158, 255, 0.5);
+  z-index: 30;
+}
+
+.device-block.device-hovered {
+  box-shadow: 0 0 0 1px #fff;
+  z-index: 25;
+}
+
+.device-block-inner {
+  padding: 4px 8px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.device-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.device-type {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.no-selection {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
 }
 
 /* 新的布局样式 */
 .detail-layout {
   display: flex;
-  gap: 20px;
+  flex-direction: column;
+  gap: 15px;
 }
 
 /* 设备详情面板样式 */
@@ -424,55 +440,164 @@ const formatUPosition = (device) => {
 /* U位图样式增强 */
 .u-position-view {
   flex: 1;
-  margin-top: 0;
+  min-width: 240px;
+  max-width: 320px;
+  background-color: rgba(20, 29, 47, 0.8);
+  border-radius: 8px;
+  padding: 12px;
+  margin-right: 0;
+  overflow-y: auto;
+  max-height: 550px;
 }
 
 .section-title {
-  margin-bottom: 15px;
-  margin-top: 0;
-  font-size: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 10px;
+  font-size: 15px;
   color: #e2e8f0;
-}
-
-.u-rack {
-  width: 100%;
-  max-width: 260px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 4px;
-  background-color: rgba(15, 23, 42, 0.7);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  box-sizing: border-box;
-  overflow: hidden;
-  border-collapse: collapse;
-  table-layout: fixed;
-}
-
-.u-position-row {
-  height: 24px; /* 增加高度以便更好显示设备 */
-  position: relative;
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
-  cursor: pointer;
-  transition: all 0.2s;
+}
+
+/* 新的U位图样式 */
+.u-rack-container {
+  position: relative;
+  height: 1386px; /* 42U * 33px */
+  width: 100%;
+  background-color: rgba(30, 39, 57, 0.5);
+  border-radius: 6px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.u-rack-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1386px; /* 42U * 33px */
+  z-index: 5;
+}
+
+.u-position-bg {
+  height: 33px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
   box-sizing: border-box;
+  display: flex;
+  align-items: center;
 }
 
-
-
-.u-position:hover {
-  filter: brightness(1.1);
+.u-number {
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.6);
+  z-index: 6;
 }
 
-.u-position.occupied {
-  color: white;
-  font-weight: bold;
-}
-
-.u-position.highlighted {
+.u-rack-devices {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 10;
+}
+
+.device-block {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 3px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.device-block:hover {
+  filter: brightness(1.2);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  z-index: 30 !important;
+}
+
+.selected-device {
+  z-index: 20;
+}
+
+.device-name {
+  font-size: 12px;
+  color: #fff;
+  padding: 5px;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* 设备弹窗样式 */
+.device-popover-content {
+  padding: 5px;
+}
+
+.device-popover-content h4 {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  color: #303133;
+  text-align: center;
+}
+
+.device-info-row {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.device-info-label {
+  width: 50px;
+  color: #909399;
+  font-size: 13px;
+}
+
+/* 点击弹窗样式 */
+.device-click-popover {
+  z-index: 9000 !important;
+}
+
+.device-click-content {
+  padding: 10px;
+}
+
+.device-click-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #ebeef5;
+  padding-bottom: 10px;
+}
+
+.device-click-header h4 {
+  font-size: 16px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.close-button {
+  padding: 0;
+  font-size: 18px;
+}
+
+.device-click-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .u-number {
