@@ -57,18 +57,79 @@ npm run preview
 
 ```
 src/
-├── api/          # 接口服务封装
-├── assets/       # 静态资源
-├── components/   # 可复用组件
-│   └── datacenter/
-│       └── screen/  # 数据中心大屏组件
-├── composables/  # 组合式函数
-├── layouts/      # 布局组件
-├── router/       # 路由配置
-├── store/        # Pinia状态管理
-├── styles/       # 全局样式
-└── views/        # 页面级组件
-    └── datacenter/ # 数据中心相关页面
+.
+├── App.vue
+├── api
+│   ├── asset.js
+│   ├── auth.js
+│   ├── config.js
+│   ├── dashboard.js
+│   ├── datacenter.js
+│   ├── file.js
+│   └── http.js
+├── assets
+│   ├── logo-small.png
+│   ├── logo-w.png
+│   └── logo.png
+├── components
+│   ├── common
+│   │   ├── Breadcrumb.vue
+│   │   ├── SearchForm.vue
+│   │   └── TableToolbar.vue
+│   ├── dashboard
+│   │   ├── ChartCard.vue
+│   │   └── StatCard.vue
+│   └── datacenter
+│       ├── BuildingSelector.vue
+│       ├── Cabinet.vue
+│       ├── CabinetDetail.vue
+│       ├── CabinetRow.vue
+│       ├── DataCenterSelector.vue
+│       ├── RoomSelector.vue
+│       └── screen
+│           ├── CabinetDetailsComponent.vue
+│           ├── CabinetLayoutComponent.vue
+│           ├── ControlBarComponent.vue
+│           └── HeaderComponent.vue
+├── composables
+│   └── useDatacenterScreen.js
+├── layouts
+│   └── MainLayout.vue
+├── main.js
+├── router
+│   └── index.js
+├── store
+│   ├── index.js
+│   └── modules
+│       ├── app.js
+│       ├── asset.js
+│       ├── datacenter.js
+│       └── user.js
+├── styles
+│   ├── datacenter
+│   │   └── screen.css
+│   └── index.css
+└── views
+    ├── asset
+    │   ├── detail.vue
+    │   └── index.vue
+    ├── big-screen
+    │   └── index.vue
+    ├── category
+    │   └── index.vue
+    ├── dashboard
+    │   └── index.vue
+    ├── datacenter
+    │   ├── index.vue
+    │   └── screen.vue
+    ├── error
+    │   └── 404.vue
+    ├── import
+    │   └── index.vue
+    ├── login
+    │   └── index.vue
+    └── setting
+        └── index.vue
 ```
 
 ## 开发指南
