@@ -26,14 +26,13 @@
                   @click="handleCabinetClick(cabinet)"
                 >
                   <div class="cabinet-name">{{ cabinet.name }}</div>
-                  <div class="cabinet-usage">
-                    <div 
-                      class="usage-bar" 
-                      :style="{ 
-                        height: `${getCabinetUsage(cabinet)}%`,
-                        backgroundColor: getCabinetUsageColor(getCabinetUsage(cabinet))
-                      }"
-                    ></div>
+                  <div class="cabinet-info">
+                    <div class="cabinet-type">
+                      {{ cabinet.type === 'network' ? '网络机柜' : '服务器机柜' }}
+                    </div>
+                    <div class="cabinet-remaining">
+                      剩余: {{ getCabinetRemainingUnits(cabinet) }}U
+                    </div>
                   </div>
                 </div>
               </div>
@@ -68,19 +67,11 @@ const handleCabinetClick = (cabinet) => {
   emit('cabinet-select', cabinet);
 };
 
-// 计算机柜使用率
-const getCabinetUsage = (cabinet) => {
+// 计算机柜剩余U数
+const getCabinetRemainingUnits = (cabinet) => {
   if (!cabinet || !cabinet.units) return 0;
-  const occupiedUnits = cabinet.units.filter(unit => unit.deviceId).length;
-  const totalUnits = cabinet.units.length;
-  return totalUnits > 0 ? Math.round((occupiedUnits / totalUnits) * 100) : 0;
-};
-
-// 根据使用率获取颜色
-const getCabinetUsageColor = (percentage) => {
-  if (percentage < 30) return '#67c23a'; // 绿色 - 低使用率
-  if (percentage < 70) return '#e6a23c'; // 橙色 - 中等使用率
-  return '#f56c6c'; // 红色 - 高使用率
+  const freeUnits = cabinet.units.filter(unit => !unit.occupied).length;
+  return freeUnits;
 };
 </script>
 
@@ -191,19 +182,29 @@ const getCabinetUsageColor = (percentage) => {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.cabinet-usage {
+.cabinet-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   flex-grow: 1;
   padding: 5px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
 }
 
-.usage-bar {
-  width: 60%;
-  background-color: #67c23a;
-  transition: height 0.3s ease, background-color 0.3s ease;
+.cabinet-type {
+  font-size: 11px;
+  color: #a0aec0;
+  margin-bottom: 5px;
+  text-align: center;
 }
+
+.cabinet-remaining {
+  font-size: 12px;
+  color: #67c23a;
+  font-weight: bold;
+  text-align: center;
+}
+
 
 .no-room-selected {
   height: 100%;

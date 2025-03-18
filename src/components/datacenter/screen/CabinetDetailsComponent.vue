@@ -4,26 +4,6 @@
     <div class="card-header" v-if="selectedCabinet">
       <div class="header-main">
         <h2>{{ selectedCabinet.name }} 详情</h2>
-        <div class="cabinet-meta">
-          <div class="meta-item">
-            <el-tag size="small" :type="selectedCabinet.type === 'network' ? 'success' : 'primary'">
-              {{ selectedCabinet.type === 'network' ? '网络机柜' : '服务器机柜' }}
-            </el-tag>
-          </div>
-          <div class="meta-item">
-            <span class="size-label">{{ selectedCabinet.width }}mm × {{ selectedCabinet.height }}U</span>
-          </div>
-          <div class="meta-item usage">
-            <span class="usage-text">{{ getCabinetUsage(selectedCabinet) }}%</span>
-            <el-progress 
-              :percentage="getCabinetUsage(selectedCabinet)" 
-              :color="getCabinetUsageColor(getCabinetUsage(selectedCabinet))"
-              :stroke-width="8"
-              :show-text="false"
-              style="width: 120px;"
-            />
-          </div>
-        </div>
       </div>
     </div>
     <div class="card-header" v-else>
@@ -145,20 +125,7 @@ const selectedDevice = ref(null);
 // 用于高亮显示指向的设备
 const hoveredDevice = ref(null);
 
-// 计算机柜使用率
-const getCabinetUsage = (cabinet) => {
-  if (!cabinet || !cabinet.units) return 0;
-  const occupiedUnits = cabinet.units.filter(unit => unit.occupied).length;
-  const totalUnits = cabinet.units.length;
-  return totalUnits > 0 ? Math.round((occupiedUnits / totalUnits) * 100) : 0;
-};
-
-// 根据使用率获取颜色
-const getCabinetUsageColor = (percentage) => {
-  if (percentage < 30) return '#67c23a'; // 绿色 - 低使用率
-  if (percentage < 70) return '#e6a23c'; // 橙色 - 中等使用率
-  return '#f56c6c'; // 红色 - 高使用率
-};
+// 机柜使用率相关函数已移除
 
 // 检查指定U位是否被占用
 const isUPositionOccupied = (cabinet, uPosition) => {
@@ -373,17 +340,7 @@ const formatUPosition = (device) => {
   font-size: 14px;
 }
 
-.usage-text {
-  color: #e2e8f0;
-  font-size: 14px;
-  margin-right: 8px;
-  font-weight: 500;
-}
 
-.meta-item.usage {
-  display: flex;
-  align-items: center;
-}
 
 .card-content {
   padding: 20px;
