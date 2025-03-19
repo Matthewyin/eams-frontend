@@ -44,12 +44,7 @@ const routes = [
                 component: () => import('@/views/category/index.vue'),
                 meta: { title: '分类管理', icon: 'FolderOpened' }
             },
-            {
-                path: 'import',
-                name: 'Import',
-                component: () => import('@/views/import/index.vue'),
-                meta: { title: '导入管理', icon: 'Upload' }
-            },
+            // 导入管理功能已集成到资产管理页面
             {
                 path: 'setting',
                 name: 'Setting',

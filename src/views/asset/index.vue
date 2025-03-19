@@ -39,29 +39,38 @@
     </search-form>
 
     <!-- 表格工具栏 -->
-    <table-toolbar :columns="columns" @refresh="fetchAssets" @size-change="handleSizeChange"
+    <table-toolbar :columns="columns" @refresh="handleSearch" @size-change="handleSizeChange"
                    @column-change="handleColumnChange">
       <template #left>
         <el-button type="primary" @click="handleAdd">
-          <el-icon>
-            <Plus/>
-          </el-icon>
+          <el-icon><Plus/></el-icon>
           <span>新增</span>
         </el-button>
 
         <el-button type="danger" :disabled="!selectedRows.length" @click="handleBatchDelete">
-          <el-icon>
-            <Delete/>
-          </el-icon>
+          <el-icon><Delete/></el-icon>
           <span>批量删除</span>
         </el-button>
 
         <el-button @click="handleExport">
-          <el-icon>
-            <Download/>
-          </el-icon>
+          <el-icon><Download/></el-icon>
           <span>导出</span>
         </el-button>
+        
+        <!-- 文件导入按钮 -->
+        <el-dropdown @command="handleImportCommand">
+          <el-button>
+            <el-icon><Upload/></el-icon>
+            <span>导入</span>
+            <el-icon class="el-icon--right"><ArrowDown/></el-icon>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="import">导入资产</el-dropdown-item>
+              <el-dropdown-item command="template">下载模板</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </template>
     </table-toolbar>
 
@@ -86,8 +95,8 @@
       >
         <template #default="scope" v-if="col.slot">
           <template v-if="col.prop === 'status'">
-            <el-tag :type="getStatusType(scope.row.status)">
-              {{ getStatusText(scope.row.status) }}
+            <el-tag :type="statusMap[scope.row.status].type">
+              {{ statusMap[scope.row.status].text }}
             </el-tag>
           </template>
 
@@ -113,109 +122,54 @@
       />
     </div>
 
-    <!-- 资产表单对话框 -->
-    <el-dialog
-        v-model="dialogVisible"
-        :title="dialogType === 'add' ? '新增资产' : '编辑资产'"
-        width="600px"
-        destroy-on-close
-    >
-      <el-form
-          ref="formRef"
-          :model="form"
-          :rules="rules"
-          label-width="100px"
-      >
-        <el-form-item label="资产名称" prop="name">
-          <el-input v-model="form.name" placeholder="请输入资产名称"/>
-        </el-form-item>
+    <!-- 使用资产表单对话框组件 -->
+    <asset-form-dialog
+      v-model="dialogVisible"
+      :type="dialogType"
+      :initial-data="form"
+      :categories="categories"
+      :departments="departments"
+      @success="handleFormSuccess"
+    />
 
-        <el-form-item label="资产编号" prop="code">
-          <el-input v-model="form.code" placeholder="请输入资产编号"/>
-        </el-form-item>
-
-        <el-form-item label="资产分类" prop="categoryId">
-          <el-select v-model="form.categoryId" placeholder="请选择资产分类">
-            <el-option
-                v-for="item in categories"
-                :key="item.id"
-                :label="item.name"
-                :value="item.id"
-            />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="所属部门" prop="departmentId">
-          <el-select v-model="form.departmentId" placeholder="请选择所属部门">
-            <el-option
-                v-for="item in departments"
-                :key="item.id"
-                :label="item.name"
-                :value="item.id"
-            />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="购入日期" prop="purchaseDate">
-          <el-date-picker
-              v-model="form.purchaseDate"
-              type="date"
-              placeholder="选择日期"
-              style="width: 100%"
-          />
-        </el-form-item>
-
-        <el-form-item label="价格" prop="price">
-          <el-input-number
-              v-model="form.price"
-              :precision="2"
-              :step="0.01"
-              :min="0"
-              style="width: 100%"
-          />
-        </el-form-item>
-
-        <el-form-item label="状态" prop="status">
-          <el-select v-model="form.status" placeholder="请选择状态">
-            <el-option label="在用" value="IN_USE"/>
-            <el-option label="闲置" value="IDLE"/>
-            <el-option label="维修" value="REPAIRING"/>
-            <el-option label="报废" value="DISCARDED"/>
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="备注" prop="remark">
-          <el-input
-              v-model="form.remark"
-              type="textarea"
-              :rows="3"
-              placeholder="请输入备注"
-          />
-        </el-form-item>
-      </el-form>
-
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm" :loading="submitLoading">确定</el-button>
-      </template>
-    </el-dialog>
+    <!-- 使用导入对话框组件 -->
+    <import-dialog
+      v-model="importDialogVisible"
+      @success="handleImportSuccess"
+    />
   </div>
 </template>
 
 <script setup>
-import {ref, computed, onMounted} from 'vue'
-import {useRouter} from 'vue-router'
-import {useAssetStore} from '@/store/modules/asset'
-import {useAppStore} from '@/store/modules/app'
-import {ElMessage, ElMessageBox} from 'element-plus'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { fileApi } from '@/api/file'
+import { useAssetStore } from '@/store/modules/asset'
+import { useAppStore } from '@/store/modules/app'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import SearchForm from '@/components/common/SearchForm.vue'
 import TableToolbar from '@/components/common/TableToolbar.vue'
-import {fileApi} from '@/api/file'
-
+import AssetFormDialog from '@/components/asset/AssetFormDialog.vue'
+import ImportDialog from '@/components/asset/ImportDialog.vue'
+import {
+  Plus,
+  Delete,
+  Download,
+  Upload,
+  ArrowDown
+} from '@element-plus/icons-vue'
 
 const router = useRouter()
 const assetStore = useAssetStore()
 const appStore = useAppStore()
+
+// 状态映射
+const statusMap = {
+  'IN_USE': { text: '在用', type: 'success' },
+  'IDLE': { text: '闲置', type: 'info' },
+  'REPAIRING': { text: '维修', type: 'warning' },
+  'DISCARDED': { text: '报废', type: 'danger' }
+}
 
 // 表格列配置
 const columns = ref([
@@ -231,9 +185,7 @@ const columns = ref([
 ])
 
 // 可见列
-const visibleColumns = computed(() => {
-  return columns.value.filter(col => col.visible)
-})
+const visibleColumns = computed(() => columns.value.filter(col => col.visible))
 
 // 表格密度
 const tableDensity = computed(() => appStore.tableDensity)
@@ -252,8 +204,6 @@ const selectedRows = ref([])
 // 对话框相关
 const dialogVisible = ref(false)
 const dialogType = ref('add') // 'add' 或 'edit'
-const formRef = ref(null)
-const submitLoading = ref(false)
 const form = ref({
   id: '',
   name: '',
@@ -266,28 +216,8 @@ const form = ref({
   remark: ''
 })
 
-// 表单验证规则
-const rules = {
-  name: [
-    {required: true, message: '请输入资产名称', trigger: 'blur'},
-    {min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur'}
-  ],
-  code: [
-    {required: true, message: '请输入资产编号', trigger: 'blur'}
-  ],
-  categoryId: [
-    {required: true, message: '请选择资产分类', trigger: 'change'}
-  ],
-  departmentId: [
-    {required: true, message: '请选择所属部门', trigger: 'change'}
-  ],
-  purchaseDate: [
-    {required: true, message: '请选择购入日期', trigger: 'change'}
-  ],
-  status: [
-    {required: true, message: '请选择状态', trigger: 'change'}
-  ]
-}
+// 导入对话框
+const importDialogVisible = ref(false)
 
 // 搜索
 const handleSearch = () => {
@@ -334,6 +264,16 @@ const handleEdit = (row) => {
   dialogVisible.value = true
 }
 
+// 表单提交成功
+const handleFormSuccess = () => {
+  assetStore.fetchAssets()
+}
+
+// 导入成功
+const handleImportSuccess = () => {
+  assetStore.fetchAssets()
+}
+
 // 查看
 const handleView = (row) => {
   router.push(`/asset/${row.id}`)
@@ -352,8 +292,7 @@ const handleDelete = (row) => {
     } catch (error) {
       console.error('删除失败:', error)
     }
-  }).catch(() => {
-  })
+  }).catch(() => {})
 }
 
 // 批量删除
@@ -376,8 +315,7 @@ const handleBatchDelete = () => {
     } catch (error) {
       console.error('批量删除失败:', error)
     }
-  }).catch(() => {
-  })
+  }).catch(() => {})
 }
 
 // 导出
@@ -390,29 +328,41 @@ const handleExport = async () => {
   }
 }
 
-// 提交表单
-const submitForm = async () => {
-  await formRef.value.validate(async (valid) => {
-    if (valid) {
-      submitLoading.value = true
-      try {
-        if (dialogType.value === 'add') {
-          await assetStore.createAsset(form.value)
-          ElMessage.success('新增成功')
-        } else {
-          await assetStore.updateAsset(form.value.id, form.value)
-          ElMessage.success('更新成功')
-        }
-        dialogVisible.value = false
-      } catch (error) {
-        console.error('提交失败:', error)
-      } finally {
-        submitLoading.value = false
-      }
-    } else {
-      return false
+// 处理导入命令
+const handleImportCommand = (command) => {
+  if (command === 'import') {
+    importDialogVisible.value = true
+  } else if (command === 'template') {
+    downloadTemplate('asset')
+  }
+}
+
+// 下载模板
+const downloadTemplate = async (templateType) => {
+  try {
+    ElMessage({
+      type: 'info',
+      message: '正在准备下载模板...',
+      duration: 2000
+    })
+    
+    const response = await fetch(`/api/templates/${templateType}`)
+    if (!response.ok) {
+      throw new Error('模板下载失败')
     }
-  })
+    
+    const blob = await response.blob()
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `${templateType}_导入模板.xlsx`
+    link.click()
+    URL.revokeObjectURL(link.href)
+    
+    ElMessage.success('模板下载成功')
+  } catch (error) {
+    console.error('模板下载失败:', error)
+    ElMessage.error(`模板下载失败: ${error.message || '未知错误'}`)
+  }
 }
 
 // 选择变化
@@ -451,30 +401,7 @@ const handleSizeChange = (size) => {
 
 // 列变化
 const handleColumnChange = () => {
-  // 保存列配置
   localStorage.setItem('assetColumns', JSON.stringify(columns.value))
-}
-
-// 获取状态类型
-const getStatusType = (status) => {
-  const statusMap = {
-    'IN_USE': 'success',
-    'IDLE': 'info',
-    'REPAIRING': 'warning',
-    'DISCARDED': 'danger'
-  }
-  return statusMap[status] || 'info'
-}
-
-// 获取状态文本
-const getStatusText = (status) => {
-  const statusMap = {
-    'IN_USE': '在用',
-    'IDLE': '闲置',
-    'REPAIRING': '维修',
-    'DISCARDED': '报废'
-  }
-  return statusMap[status] || '未知'
 }
 
 // 初始化
@@ -504,4 +431,3 @@ onMounted(async () => {
   text-align: right;
 }
 </style>
-
