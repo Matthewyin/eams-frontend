@@ -129,6 +129,8 @@ import { ref, defineProps, defineEmits, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { fileApi } from '@/api/file'
 import { useAssetStore } from '@/store/modules/asset'
+import { useUserStore } from '@/store/modules/user'
+import { useRouter } from 'vue-router'
 import {
   Upload,
   Delete,
@@ -150,6 +152,8 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'success'])
 
 const assetStore = useAssetStore()
+const userStore = useUserStore()
+const router = useRouter()
 const visible = ref(props.modelValue)
 const fileInputRef = ref(null)
 const selectedFile = ref(null)
@@ -245,8 +249,60 @@ const startUpload = async () => {
       }
     })
     
+    // 检查是否是HTML登录页面（认证失败）
+    if (typeof uploadResponse === 'string' && uploadResponse.includes('<html') && 
+        (uploadResponse.includes('sign in') || uploadResponse.includes('login'))) {
+      // 关闭当前对话框
+      visible.value = false;
+      
+      // 使用setTimeout确保对话框关闭后再处理登出操作
+      setTimeout(() => {
+        // 提示用户重新登录
+        ElMessage.error('登录已过期，请重新登录');
+        
+        // 先跳转到登录页面，然后再清除用户信息
+        // 这样可以避免其他组件在跳转过程中还在请求数据
+        router.push('/login').then(() => {
+          userStore.logout(); // 清除当前用户信息
+        });
+      }, 100);
+      
+      return;
+    }
+    
     // 获取任务ID
-    const taskId = uploadResponse.data.taskId
+    // 后端API返回的data字段直接就是taskId字符串
+    if (!uploadResponse) {
+      throw new Error('上传响应为空');
+    }
+    
+    // 检查是否有网络连接问题
+    if (Array.isArray(uploadResponse.data) && uploadResponse.data.length === 0) {
+      throw new Error('后端服务不可用，请检查网络连接或联系管理员');
+    }
+    
+    // 检查data是否存在
+    if (uploadResponse.data === undefined || uploadResponse.data === null) {
+      throw new Error('认证失败或会话过期，请重新登录');
+    }
+    
+    // 如果data是对象，尝试从不同属性中获取taskId
+    let taskId;
+    if (typeof uploadResponse.data === 'object' && uploadResponse.data !== null && !Array.isArray(uploadResponse.data)) {
+      // 尝试从各种可能的属性中获取taskId
+      taskId = uploadResponse.data.taskId || uploadResponse.data.id || uploadResponse.data.data;
+      console.log('从对象中提取的taskId:', taskId);
+      
+      if (!taskId) {
+        // 如果仍然找不到taskId，打印对象的所有属性
+        console.log('对象的所有属性:', Object.keys(uploadResponse.data));
+        throw new Error('无法从响应中提取taskId');
+      }
+    } else {
+      // 如果data不是对象，直接使用
+      taskId = uploadResponse.data;
+      console.log('直接使用的taskId:', taskId);
+    }
     
     // 更新状态为处理中
     uploadStatus.value = 'processing'

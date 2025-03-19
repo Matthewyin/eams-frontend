@@ -55,6 +55,7 @@ import { ref, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/store/modules/user'
 import { ElMessage } from 'element-plus'
+import { authApi } from '@/api/auth'
 
 const router = useRouter()
 const route = useRoute()
@@ -81,40 +82,54 @@ const loginRules = {
   ]
 }
 
-// 登录方法 - 修改为不需要后端认证
+// 登录方法 - 使用真实后端认证
 const handleLogin = async () => {
   await loginFormRef.value.validate(async (valid) => {
     if (valid) {
       loading.value = true
       try {
-        // 模拟登录成功，不调用后端API
-        const mockUserInfo = {
-          id: 1,
+        // 调用真实登录API
+        const { data } = await authApi.login({
           username: loginForm.username,
-          name: '管理员',
-          avatar: '',
-          roles: ['admin'],
-          permissions: ['*']
+          password: loginForm.password,
+          remember: loginForm.remember
+        })
+        
+        if (!data || !data.token) {
+          throw new Error('登录响应缺少必要信息')
         }
-
-        // 模拟登录成功的token
-        const mockToken = 'mock-token-' + Date.now()
-
-        // 直接设置用户信息和token
-        localStorage.setItem('token', mockToken)
-        localStorage.setItem('userInfo', JSON.stringify(mockUserInfo))
-
+        
+        // 存储token和用户信息
+        localStorage.setItem('token', data.token)
+        if (data.userInfo) {
+          localStorage.setItem('userInfo', JSON.stringify(data.userInfo))
+        }
+        
         // 更新store
-        userStore.token = mockToken
-        userStore.userInfo = mockUserInfo
-
+        userStore.setToken(data.token)
+        if (data.userInfo) {
+          userStore.setUserInfo(data.userInfo)
+        } else {
+          // 如果登录响应中没有用户信息，则获取用户信息
+          try {
+            const userInfoResponse = await authApi.getUserInfo()
+            if (userInfoResponse.data) {
+              localStorage.setItem('userInfo', JSON.stringify(userInfoResponse.data))
+              userStore.setUserInfo(userInfoResponse.data)
+            }
+          } catch (userInfoError) {
+            console.error('获取用户信息失败:', userInfoError)
+          }
+        }
+        
         ElMessage.success('登录成功')
-
+        
         // 如果有重定向地址，则跳转到重定向地址
         const redirect = route.query.redirect || '/'
         router.push(redirect)
       } catch (error) {
         console.error('登录失败:', error)
+        ElMessage.error(error.message || '登录失败，请检查用户名和密码')
       } finally {
         loading.value = false
       }

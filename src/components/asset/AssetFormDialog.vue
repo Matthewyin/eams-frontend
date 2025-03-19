@@ -20,16 +20,7 @@
         <el-input v-model="form.code" placeholder="请输入资产编号"/>
       </el-form-item>
 
-      <el-form-item label="资产分类" prop="categoryId">
-        <el-select v-model="form.categoryId" placeholder="请选择资产分类">
-          <el-option
-            v-for="item in categories"
-            :key="item.id"
-            :label="item.name"
-            :value="item.id"
-          />
-        </el-select>
-      </el-form-item>
+      <!-- 分类管理功能已移除，待后续开发 -->
 
       <el-form-item label="所属部门" prop="departmentId">
         <el-select v-model="form.departmentId" placeholder="请选择所属部门">
@@ -105,10 +96,7 @@ const props = defineProps({
     type: Object,
     default: () => ({})
   },
-  categories: {
-    type: Array,
-    default: () => []
-  },
+  // categories prop removed - to be implemented later
   departments: {
     type: Array,
     default: () => []
@@ -127,7 +115,7 @@ const form = ref({
   id: '',
   name: '',
   code: '',
-  categoryId: '',
+  // categoryId: '', // removed - to be implemented later
   departmentId: '',
   purchaseDate: new Date(),
   price: 0,
@@ -144,9 +132,7 @@ const rules = {
   code: [
     {required: true, message: '请输入资产编号', trigger: 'blur'}
   ],
-  categoryId: [
-    {required: true, message: '请选择资产分类', trigger: 'change'}
-  ],
+  // categoryId validation removed - to be implemented later
   departmentId: [
     {required: true, message: '请选择所属部门', trigger: 'change'}
   ],
@@ -178,7 +164,7 @@ watch(() => props.initialData, (val) => {
       id: '',
       name: '',
       code: '',
-      categoryId: '',
+      // categoryId: '', // removed - to be implemented later
       departmentId: '',
       purchaseDate: new Date(),
       price: 0,

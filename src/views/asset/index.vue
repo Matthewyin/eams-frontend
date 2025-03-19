@@ -6,16 +6,7 @@
         <el-input v-model="queryParams.keyword" placeholder="资产名称/编号/序列号" clearable/>
       </el-form-item>
 
-      <el-form-item label="资产分类">
-        <el-select v-model="queryParams.categoryId" placeholder="请选择" clearable>
-          <el-option
-              v-for="item in categories"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-          />
-        </el-select>
-      </el-form-item>
+      <!-- 分类管理功能已移除，待后续开发 -->
 
       <el-form-item label="所属部门">
         <el-select v-model="queryParams.departmentId" placeholder="请选择" clearable>
@@ -127,7 +118,6 @@
       v-model="dialogVisible"
       :type="dialogType"
       :initial-data="form"
-      :categories="categories"
       :departments="departments"
       @success="handleFormSuccess"
     />
@@ -175,7 +165,8 @@ const statusMap = {
 const columns = ref([
   {prop: 'code', label: '资产编号', width: '120', sortable: true, visible: true},
   {prop: 'name', label: '资产名称', width: '', sortable: false, visible: true},
-  {prop: 'categoryName', label: '资产分类', width: '120', sortable: false, visible: true},
+  // Category column removed - to be implemented later
+  // {prop: 'categoryName', label: '资产分类', width: '120', sortable: false, visible: true},
   {prop: 'departmentName', label: '所属部门', width: '120', sortable: false, visible: true},
   {prop: 'status', label: '状态', width: '100', sortable: false, visible: true, slot: true},
   {prop: 'purchaseDate', label: '购入日期', width: '120', sortable: true, visible: true},
@@ -195,7 +186,7 @@ const assetList = computed(() => assetStore.assetList)
 const total = computed(() => assetStore.total)
 const loading = computed(() => assetStore.loading)
 const queryParams = computed(() => assetStore.queryParams)
-const categories = computed(() => assetStore.categories)
+// categories computed property removed - to be implemented later
 const departments = computed(() => assetStore.departments)
 
 // 选中行
@@ -208,7 +199,7 @@ const form = ref({
   id: '',
   name: '',
   code: '',
-  categoryId: '',
+  // categoryId: '', // removed - to be implemented later
   departmentId: '',
   purchaseDate: '',
   price: 0,
@@ -237,7 +228,7 @@ const handleAdd = () => {
     id: '',
     name: '',
     code: '',
-    categoryId: '',
+    // categoryId: '', // removed - to be implemented later
     departmentId: '',
     purchaseDate: new Date(),
     price: 0,
@@ -412,8 +403,7 @@ onMounted(async () => {
     columns.value = JSON.parse(savedColumns)
   }
 
-  // 获取分类和部门
-  await assetStore.fetchCategories()
+  // 获取部门
   await assetStore.fetchDepartments()
 
   // 获取资产列表

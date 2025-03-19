@@ -17,6 +17,12 @@ export const API_PATHS = {
         LOGOUT: '/api/auth/logout',
         USER_INFO: '/api/auth/user'
     },
+    USER: {
+        LIST: '/api/users',
+        DETAIL: '/api/users/',
+        RESET_PASSWORD: '/api/users/reset-password/',
+        ROLES: '/api/roles'
+    },
     ASSET: {
         LIST: '/api/assets',
         DETAIL: '/api/assets/',
@@ -35,6 +41,12 @@ export const API_PATHS = {
     },
     EXPORT: {
         EXCEL: '/api/export/excel'
+    },
+    LOG: {
+        LIST: '/api/logs',
+        DETAIL: '/api/logs/',
+        EXPORT: '/api/logs/export',
+        STATS: '/api/logs/stats'
     }
 }
 

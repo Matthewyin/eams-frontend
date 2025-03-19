@@ -36,28 +36,43 @@ http.interceptors.request.use(
 // 响应拦截器
 http.interceptors.response.use(
     response => {
-        // 这里可以统一处理响应数据
-        return response.data
+        // 检查响应数据格式
+        const data = response.data
+        
+        // 如果响应数据中有错误信息，显示错误提示
+        if (data && data.code && data.code !== 200 && data.message) {
+            ElMessage.error(data.message)
+        }
+        
+        return data
     },
     error => {
         let message = ERROR_MESSAGES.SERVER_ERROR
+        let isAuthError = false
+        let shouldReturnMockData = false
+        
+        // 检查请求URL是否与认证相关
+        const isAuthRequest = error.config && (
+            error.config.url.includes('/api/auth/') ||
+            error.config.url.includes('/api/users/')
+        )
 
         // 检查是否存在网络连接问题
         if (error.message && error.message.includes('Network Error')) {
-            // 修改为更友好的提示，不显示错误
-            console.warn('后端服务未启动或不可访问，使用模拟数据')
-            // 返回模拟数据而不是抛出错误
-            return Promise.resolve({
-                code: 200,
-                data: [],
-                message: 'success',
-                success: true
-            })
+            message = '网络连接失败，请检查您的网络连接'
+            console.warn('后端服务未启动或不可访问')
+            
+            // 如果是认证请求，不返回模拟数据
+            shouldReturnMockData = !isAuthRequest
         } else if (error.response) {
             // 服务器返回错误状态码
             switch (error.response.status) {
+                case 400:
+                    message = error.response.data?.message || '请求参数错误'
+                    break
                 case 401:
                     message = ERROR_MESSAGES.UNAUTHORIZED
+                    isAuthError = true
                     // 未授权时，清除用户信息并跳转到登录页
                     const userStore = useUserStore()
                     userStore.logout()
@@ -70,35 +85,48 @@ http.interceptors.response.use(
                     message = '请求的资源不存在，请检查API路径是否正确'
                     break
                 case 500:
-                    message = ERROR_MESSAGES.SERVER_ERROR
+                    message = error.response.data?.message || ERROR_MESSAGES.SERVER_ERROR
                     break
                 default:
                     message = error.response.data?.message || ERROR_MESSAGES.SERVER_ERROR
             }
+            
+            // 如果是认证请求，不返回模拟数据
+            shouldReturnMockData = !isAuthRequest
         } else if (error.request) {
             // 请求发出但没有收到响应
-            console.warn('服务器未响应，使用模拟数据')
-            // 返回模拟数据而不是抛出错误
+            message = '服务器未响应，请稍后再试'
+            console.warn('服务器未响应')
+            
+            // 如果是认证请求，不返回模拟数据
+            shouldReturnMockData = !isAuthRequest
+        } else if (error.code === 'ECONNABORTED') {
+            // 请求超时
+            message = ERROR_MESSAGES.TIMEOUT_ERROR
+            
+            // 如果是认证请求，不返回模拟数据
+            shouldReturnMockData = !isAuthRequest
+        }
+
+        // 显示错误提示，除非是401错误（已经在上面处理了）
+        if (!isAuthError) {
+            ElMessage.error(message)
+        }
+        
+        console.error('请求错误:', message, '\n错误详情:', error)
+        
+        // 如果应该返回模拟数据，则返回模拟数据
+        if (shouldReturnMockData) {
             return Promise.resolve({
                 code: 200,
                 data: [],
                 message: 'success',
                 success: true
             })
-        } else if (error.code === 'ECONNABORTED') {
-            // 请求超时
-            message = ERROR_MESSAGES.TIMEOUT_ERROR
         }
-
-        // 显示错误提示
-        console.error('请求错误:', message, '\n错误详情:', error)
-        // 返回模拟数据而不是抛出错误
-        return Promise.resolve({
-            code: 200,
-            data: [],
-            message: 'success',
-            success: true
-        })
+        
+        // 否则返回错误
+        return Promise.reject(error)
     }
 )
 

@@ -13,16 +13,16 @@ export const useAssetStore = defineStore('asset', () => {
         page: 1,
         pageSize: 10,
         keyword: '',
-        categoryId: '',
+        // categoryId: '', // 分类管理功能已移除
         departmentId: '',
         status: '',
         sortBy: 'createTime',
         sortOrder: 'descending'
     })
 
-    // 分类列表
-    const categories = ref([])
-    const categoriesLoading = ref(false)
+    // 分类管理功能已移除，待后续开发
+    // const categories = ref([])
+    // const categoriesLoading = ref(false)
 
     // 部门列表
     const departments = ref([])
@@ -248,40 +248,10 @@ export const useAssetStore = defineStore('asset', () => {
         }
     }
 
-    // 获取分类列表
-    const fetchCategories = async () => {
-        categoriesLoading.value = true
-        try {
-            const res = await assetApi.getCategories()
-
-            // 如果后端未启动，使用模拟数据
-            if (!res || !res.length) {
-                // 模拟数据
-                categories.value = [
-                    { id: 1, name: '电子设备', code: 'ELE' },
-                    { id: 2, name: '办公家具', code: 'FUR' },
-                    { id: 3, name: '运输工具', code: 'VEH' },
-                    { id: 4, name: '办公用品', code: 'OFF' }
-                ]
-            } else {
-                categories.value = res
-            }
-
-            return categories.value
-        } catch (error) {
-            console.error('获取分类列表失败:', error)
-            // 使用模拟数据
-            categories.value = [
-                { id: 1, name: '电子设备', code: 'ELE' },
-                { id: 2, name: '办公家具', code: 'FUR' },
-                { id: 3, name: '运输工具', code: 'VEH' },
-                { id: 4, name: '办公用品', code: 'OFF' }
-            ]
-            return categories.value
-        } finally {
-            categoriesLoading.value = false
-        }
-    }
+    // 分类管理功能已移除，待后续开发
+    // const fetchCategories = async () => {
+    //     // 分类获取功能已移除
+    // }
 
     // 获取部门列表
     const fetchDepartments = async () => {
@@ -335,7 +305,7 @@ export const useAssetStore = defineStore('asset', () => {
             page: 1,
             pageSize: 10,
             keyword: '',
-            categoryId: '',
+            // categoryId: '', // 分类管理功能已移除
             departmentId: '',
             status: '',
             sortBy: 'createTime',
@@ -348,8 +318,8 @@ export const useAssetStore = defineStore('asset', () => {
         total,
         loading,
         queryParams,
-        categories,
-        categoriesLoading,
+        // categories, // 分类管理功能已移除
+        // categoriesLoading, // 分类管理功能已移除
         departments,
         departmentsLoading,
         fetchAssets,
@@ -358,7 +328,7 @@ export const useAssetStore = defineStore('asset', () => {
         updateAsset,
         deleteAsset,
         batchDeleteAssets,
-        fetchCategories,
+        // fetchCategories, // 分类管理功能已移除
         fetchDepartments,
         setQueryParam,
         resetQueryParams

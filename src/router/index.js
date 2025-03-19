@@ -38,13 +38,20 @@ const routes = [
                 component: () => import('@/views/asset/detail.vue'),
                 meta: { title: '资产详情', hidden: true }
             },
-            {
-                path: 'category',
-                name: 'Category',
-                component: () => import('@/views/category/index.vue'),
-                meta: { title: '分类管理', icon: 'FolderOpened' }
-            },
+            // 分类管理功能已移除，待后续开发
             // 导入管理功能已集成到资产管理页面
+            {
+                path: 'log',
+                name: 'Log',
+                component: () => import('@/views/log/index.vue'),
+                meta: { title: '操作日志', icon: 'List' }
+            },
+            {
+                path: 'user',
+                name: 'User',
+                component: () => import('@/views/user/index.vue'),
+                meta: { title: '用户管理', icon: 'User', permission: 'user:view' }
+            },
             {
                 path: 'setting',
                 name: 'Setting',
