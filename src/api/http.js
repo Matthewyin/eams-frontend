@@ -21,14 +21,19 @@ const http = axios.create({
 // 请求拦截器
 http.interceptors.request.use(
     config => {
+        console.log('发起请求:', config.url)
         // 这里可以添加token等认证信息
         const token = localStorage.getItem('token')
         if (token) {
+            console.log('请求携带认证token')
             config.headers.Authorization = `Bearer ${token}`
+        } else {
+            console.log('请求未携带token')
         }
         return config
     },
     error => {
+        console.error('请求发送失败:', error)
         return Promise.reject(error)
     }
 )
@@ -36,6 +41,8 @@ http.interceptors.request.use(
 // 响应拦截器
 http.interceptors.response.use(
     response => {
+        console.log('请求成功:', response.config.url)
+        console.log('响应数据:', response.data)
         // 检查响应数据格式
         const data = response.data
         
@@ -47,6 +54,17 @@ http.interceptors.response.use(
         return data
     },
     error => {
+        console.error('请求失败:', error.config?.url)
+        console.error('错误详情:', error.response?.data || error.message)
+        
+        // 处理401错误（未认证）
+        if (error.response?.status === 401) {
+            console.log('检测到401错误，准备登出...')
+            const userStore = useUserStore()
+            userStore.logout()
+            router.push('/login')
+        }
+        
         let message = ERROR_MESSAGES.SERVER_ERROR
         let isAuthError = false
         let shouldReturnMockData = false
@@ -69,14 +87,6 @@ http.interceptors.response.use(
             switch (error.response.status) {
                 case 400:
                     message = error.response.data?.message || '请求参数错误'
-                    break
-                case 401:
-                    message = ERROR_MESSAGES.UNAUTHORIZED
-                    isAuthError = true
-                    // 未授权时，清除用户信息并跳转到登录页
-                    const userStore = useUserStore()
-                    userStore.logout()
-                    router.push('/login')
                     break
                 case 403:
                     message = ERROR_MESSAGES.FORBIDDEN

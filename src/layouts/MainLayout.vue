@@ -17,32 +17,34 @@
           background-color="#001529"
           text-color="#fff"
           active-text-color="#409EFF"
+          @select="handleMenuSelect"
+          @open="handleMenuOpen"
+          @close="handleMenuClose"
         >
           <template v-for="route in routes" :key="route.path">
             <!-- 隐藏的路由不显示 -->
-            <template v-if="!route.meta?.hidden">
+            <template v-if="route?.meta && !route.meta.hidden">
               <!-- 没有子路由 -->
-              <el-menu-item :index="route.path" v-if="!route.children" @click="navigateTo(route.path)">
-                <el-icon v-if="route.meta?.icon"><component :is="route.meta.icon" /></el-icon>
-                <template #title>{{ route.meta?.title }}</template>
+              <el-menu-item :index="route.path" v-if="!route.children">
+                <el-icon v-if="route?.meta?.icon"><component :is="route.meta.icon" /></el-icon>
+                <template #title>{{ getRouteTitle(route) }}</template>
               </el-menu-item>
               
               <!-- 有子路由 -->
               <el-sub-menu :index="route.path" v-else>
                 <template #title>
-                  <el-icon v-if="route.meta?.icon"><component :is="route.meta.icon" /></el-icon>
-                  <span>{{ route.meta?.title }}</span>
+                  <el-icon v-if="route?.meta?.icon"><component :is="route.meta.icon" /></el-icon>
+                  <span>{{ getRouteTitle(route) }}</span>
                 </template>
                 
                 <el-menu-item 
                   v-for="child in route.children" 
                   :key="child.path" 
                   :index="route.path + '/' + child.path"
-                  @click="navigateTo(route.path + '/' + child.path)"
-                  v-if="!child.meta?.hidden"
+                  v-if="child?.meta && !child.meta.hidden"
                 >
-                  <el-icon v-if="child.meta?.icon"><component :is="child.meta.icon" /></el-icon>
-                  <template #title>{{ child.meta?.title }}</template>
+                  <el-icon v-if="child?.meta?.icon"><component :is="child.meta.icon" /></el-icon>
+                  <template #title>{{ getRouteTitle(child) }}</template>
                 </el-menu-item>
               </el-sub-menu>
             </template>
@@ -99,10 +101,30 @@
       
       <!-- 内容区 -->
       <el-main>
-        <router-view v-slot="{ Component }">
+        <div v-if="routeLoadError" class="route-error">
+          <el-result
+            icon="error"
+            title="加载失败"
+            sub-title="页面加载时发生错误，请刷新页面或联系管理员"
+          >
+            <template #extra>
+              <el-button type="primary" @click="refreshPage">刷新页面</el-button>
+            </template>
+          </el-result>
+        </div>
+        <router-view v-else v-slot="{ Component }">
           <transition name="fade" mode="out-in">
             <keep-alive :include="cachedViews">
-              <component :is="Component" />
+              <suspense>
+                <template #default>
+                  <component :is="Component" :key="$route.fullPath" />
+                </template>
+                <template #fallback>
+                  <div class="loading-container">
+                    <el-skeleton :rows="10" animated />
+                  </div>
+                </template>
+              </suspense>
             </keep-alive>
           </transition>
         </router-view>
@@ -117,28 +139,128 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAppStore } from '@/store/modules/app'
 import { useUserStore } from '@/store/modules/user'
 import Breadcrumb from '@/components/common/Breadcrumb.vue'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const route = useRoute()
 const appStore = useAppStore()
 const userStore = useUserStore()
 
+// 路由加载错误状态
+const routeLoadError = ref(false)
+
+// 监听路由变化
+router.beforeEach((to, from, next) => {
+    console.log('主布局 - 路由变化:', { from: from.path, to: to.path })
+    routeLoadError.value = false
+    next()
+})
+
+// 增加一个方法用于记录路由变化
+router.afterEach((to, from) => {
+  console.log(`路由完成: 从 ${from.path} 到 ${to.path}`)
+  console.log('当前路由Meta:', to.meta)
+  console.log('当前组件:', to.matched.map(record => record.components?.default?.name || '未命名组件'))
+})
+
+// 路由信息
+const routes = ref([])
+
+// 安全地获取路由
+const initRoutes = () => {
+  try {
+    // 使用getRoutes方法代替直接访问router.options
+    const allRoutes = router.getRoutes()
+    console.log('所有路由:', allRoutes)
+    
+    // 查找根路由的子路由
+    const rootRoute = allRoutes.find(r => r.path === '/')
+    if (rootRoute && rootRoute.children) {
+      routes.value = rootRoute.children
+      console.log('成功获取子路由:', routes.value)
+    } else {
+      console.warn('未找到根路由或子路由为空')
+      routes.value = []
+    }
+  } catch (error) {
+    console.error('获取路由信息失败:', error)
+    routes.value = []
+  }
+}
+
+// 组件挂载时
+onMounted(() => {
+    console.log('主布局组件已挂载')
+    console.log('当前用户信息:', userStore.userInfo)
+    console.log('当前路由信息:', {
+        path: route.path,
+        name: route.name,
+        meta: route.meta
+    })
+    
+    // 诊断路由结构
+    console.log('Router对象:', router)
+    console.log('Routes数组:', router.options?.routes)
+    console.log('根路由:', router.options?.routes?.find(r => r.path === '/'))
+    console.log('子路由:', router.options?.routes?.find(r => r.path === '/')?.children)
+    
+    // 初始化路由
+    initRoutes()
+})
+
+// 处理路由组件加载错误
+const handleRouteError = (error) => {
+    console.error('路由组件加载失败:', error)
+    routeLoadError.value = true
+}
+
+// 刷新页面
+const refreshPage = () => {
+    console.log('手动刷新页面')
+    window.location.reload()
+}
+
 // 侧边栏状态
 const sidebarCollapsed = computed(() => appStore.sidebarCollapsed)
-const toggleSidebar = () => appStore.toggleSidebar()
+const toggleSidebar = () => {
+    console.log('切换侧边栏状态:', !sidebarCollapsed.value)
+    appStore.toggleSidebar()
+}
 
 // 用户信息
 const username = computed(() => userStore.username)
 const avatar = computed(() => userStore.avatar)
 
 // 路由信息
-const routes = router.options.routes.find(r => r.path === '/').children
 const activeMenu = computed(() => route.path)
-const cachedViews = ref(['Dashboard', 'Asset', 'Category'])
+const cachedViews = ref(['Dashboard', 'Asset'])
+
+// 增加路由meta的安全访问
+const getRouteTitle = (route) => {
+  return route?.meta?.title || ''
+}
 
 // 导航方法
 const navigateTo = (path) => {
-  router.push(path)
+  try {
+    console.log('Navigating to path:', path)
+    
+    // 处理相对路径
+    if (!path.startsWith('/')) {
+      path = '/' + path
+    }
+    
+    console.log('最终导航路径:', path)
+    router.push(path).then(() => {
+      console.log('导航成功')
+    }).catch(err => {
+      console.error('导航失败:', err)
+      ElMessage.error('页面导航失败：' + err.message)
+    })
+  } catch (error) {
+    console.error('Navigation error:', error)
+    ElMessage.error('页面导航出错：' + error.message)
+  }
 }
 
 // 全屏切换
@@ -158,13 +280,20 @@ const handleLogout = async () => {
   router.push('/login')
 }
 
-// 初始化
-onMounted(() => {
-  // 如果有主题设置，应用主题
-  if (appStore.theme === 'dark') {
-    document.documentElement.classList.add('dark')
-  }
-})
+// 处理菜单选择
+const handleMenuSelect = (index) => {
+  console.log('菜单选择:', index)
+  navigateTo(index)
+}
+
+// 菜单的打开和关闭事件处理
+const handleMenuOpen = (index) => {
+  console.log('菜单打开:', index)
+}
+
+const handleMenuClose = (index) => {
+  console.log('菜单关闭:', index)
+}
 </script>
 
 <style scoped>

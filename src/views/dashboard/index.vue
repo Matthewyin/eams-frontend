@@ -322,11 +322,27 @@ const navigateTo = (path) => {
   router.push(path)
 }
 
-// 初始化
+// 添加在onMounted前
+const initData = async () => {
+  try {
+    console.log('初始化仪表盘数据')
+    await fetchOverviewData()
+    await fetchTrendData()
+    await fetchDistributionData()
+    console.log('仪表盘数据加载成功')
+  } catch (error) {
+    console.error('初始化仪表盘数据失败:', error)
+  }
+}
+
+// 在onMounted中调用initData
 onMounted(() => {
-  fetchOverviewData()
-  fetchTrendData()
-  fetchDistributionData()
+  console.log('Dashboard component mounted')
+  try {
+    initData()
+  } catch (error) {
+    console.error('Dashboard onMounted 错误:', error)
+  }
 })
 </script>
 

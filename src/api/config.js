@@ -21,7 +21,19 @@ export const API_PATHS = {
         LIST: '/api/users',
         DETAIL: '/api/users/',
         RESET_PASSWORD: '/api/users/reset-password/',
-        ROLES: '/api/roles'
+        ROLES: '/api/users/roles'
+    },
+    ROLE: {
+        LIST: '/api/roles',
+        ALL: '/api/roles/all',
+        DETAIL: '/api/roles/'
+    },
+    PERMISSION: {
+        LIST: '/api/permissions',
+        TREE: '/api/permissions/tree',
+        DETAIL: '/api/permissions/',
+        ROLE: '/api/permissions/role/',
+        USER: '/api/permissions/user/'
     },
     ASSET: {
         LIST: '/api/assets',

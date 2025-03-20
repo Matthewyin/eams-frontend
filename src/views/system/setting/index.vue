@@ -1,4 +1,4 @@
-<!-- src/views/setting/index.vue -->
+<!-- src/views/system/setting/index.vue -->
 <template>
   <div class="setting-page">
     <el-card>
