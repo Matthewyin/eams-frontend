@@ -18,20 +18,19 @@
           text-color="#fff"
           active-text-color="#409EFF"
           @select="handleMenuSelect"
-          @open="handleMenuOpen"
-          @close="handleMenuClose"
+          router
         >
           <template v-for="route in routes" :key="route.path">
             <!-- 隐藏的路由不显示 -->
             <template v-if="route?.meta && !route.meta.hidden">
               <!-- 没有子路由 -->
-              <el-menu-item :index="route.path" v-if="!route.children">
+              <el-menu-item :index="'/' + route.path" v-if="!route.children">
                 <el-icon v-if="route?.meta?.icon"><component :is="route.meta.icon" /></el-icon>
                 <template #title>{{ getRouteTitle(route) }}</template>
               </el-menu-item>
               
               <!-- 有子路由 -->
-              <el-sub-menu :index="route.path" v-else>
+              <el-sub-menu :index="'/' + route.path" v-else>
                 <template #title>
                   <el-icon v-if="route?.meta?.icon"><component :is="route.meta.icon" /></el-icon>
                   <span>{{ getRouteTitle(route) }}</span>
@@ -40,7 +39,7 @@
                 <el-menu-item 
                   v-for="child in route.children" 
                   :key="child.path" 
-                  :index="route.path + '/' + child.path"
+                  :index="'/' + route.path + '/' + child.path"
                   v-if="child?.meta && !child.meta.hidden"
                 >
                   <el-icon v-if="child?.meta?.icon"><component :is="child.meta.icon" /></el-icon>
@@ -85,11 +84,7 @@
             </div>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item @click="navigateTo('/setting')">
-                  <el-icon><Setting /></el-icon>
-                  <span>个人设置</span>
-                </el-dropdown-item>
-                <el-dropdown-item divided @click="handleLogout">
+                <el-dropdown-item @click="handleLogout">
                   <el-icon><SwitchButton /></el-icon>
                   <span>退出登录</span>
                 </el-dropdown-item>
@@ -232,7 +227,10 @@ const username = computed(() => userStore.username)
 const avatar = computed(() => userStore.avatar)
 
 // 路由信息
-const activeMenu = computed(() => route.path)
+const activeMenu = computed(() => {
+  // 确保总是返回当前路由的完整路径
+  return route.path
+})
 const cachedViews = ref(['Dashboard', 'Asset'])
 
 // 增加路由meta的安全访问
@@ -244,6 +242,8 @@ const getRouteTitle = (route) => {
 const navigateTo = (path) => {
   try {
     console.log('Navigating to path:', path)
+    
+    // 不再特殊处理系统管理路由，让它正常展开子菜单
     
     // 处理相对路径
     if (!path.startsWith('/')) {
@@ -283,16 +283,9 @@ const handleLogout = async () => {
 // 处理菜单选择
 const handleMenuSelect = (index) => {
   console.log('菜单选择:', index)
-  navigateTo(index)
-}
-
-// 菜单的打开和关闭事件处理
-const handleMenuOpen = (index) => {
-  console.log('菜单打开:', index)
-}
-
-const handleMenuClose = (index) => {
-  console.log('菜单关闭:', index)
+  
+  // 不阻止任何菜单项的点击
+  // 由于设置了router属性，Element Plus会自动处理导航
 }
 </script>
 
