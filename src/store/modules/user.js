@@ -55,31 +55,52 @@ export const useUserStore = defineStore('user', () => {
         localStorage.setItem('userInfo', JSON.stringify(newUserInfo))
     }
 
-    // 登录 - 使用真实后端认证
+    // 登录 - 根据接口文档实现
     const login = async (loginData) => {
         console.log('开始登录流程...')
         try {
-            // 调用真实登录API
+            // 调用登录API
             const response = await authApi.login(loginData)
-            const data = response.data
-            console.log('登录API响应:', data)
+            console.log('登录API响应:', response)
             
-            if (!data || !data.token) {
-                throw new Error('登录响应缺少必要信息')
+            // 根据接口文档检查响应格式
+            if (response.code !== 200 || !response.data || !response.data.token) {
+                throw new Error(response.message || '登录响应缺少必要信息')
             }
             
-            // 设置token
-            setToken(data.token)
+            const { token, expires, userInfo } = response.data
             
-            // 如果响应中包含用户信息，则设置用户信息
-            if (data.userInfo) {
-                console.log('登录响应包含用户信息，直接设置')
-                setUserInfo(data.userInfo)
+            // 先清除旧的登录状态
+            localStorage.removeItem('token')
+            localStorage.removeItem('userInfo')
+            
+            // 设置新的token和用户信息
+            setToken(token)
+            if (userInfo) {
+                console.log('登录响应包含用户信息，设置用户信息')
+                setUserInfo(userInfo)
+            } else {
+                console.log('登录响应不包含用户信息，尝试获取用户信息')
+                // 如果登录响应中没有用户信息，立即获取用户信息
+                try {
+                    const userInfoResponse = await authApi.getUserInfo()
+                    if (userInfoResponse.data) {
+                        setUserInfo(userInfoResponse.data)
+                    }
+                } catch (error) {
+                    console.error('获取用户信息失败:', error)
+                    throw new Error('登录成功但获取用户信息失败')
+                }
             }
             
-            return data
+            return response.data
         } catch (error) {
             console.error('登录失败，详细错误:', error)
+            // 确保清除任何可能的部分登录状态
+            localStorage.removeItem('token')
+            localStorage.removeItem('userInfo')
+            token.value = ''
+            userInfo.value = {}
             throw error
         }
     }

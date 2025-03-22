@@ -33,6 +33,16 @@ export function formatDate(date, format = 'YYYY-MM-DD HH:mm:ss') {
 }
 
 /**
+ * 格式化日期时间
+ * @param {string|number|Date} dateTime - 日期对象、时间戳或日期字符串
+ * @param {string} [format='YYYY-MM-DD HH:mm:ss'] - 格式化模式
+ * @returns {string} 格式化后的日期时间字符串
+ */
+export function formatDateTime(dateTime, format = 'YYYY-MM-DD HH:mm:ss') {
+  return formatDate(dateTime, format);
+}
+
+/**
  * 格式化文件大小
  * @param {number} bytes - 文件大小（字节）
  * @param {number} [decimals=2] - 小数位数

@@ -66,7 +66,7 @@ const loginFormRef = ref(null)
 const loading = ref(false)
 const loginForm = reactive({
   username: 'admin',
-  password: 'admin123',
+  password: 'cisco123',
   remember: false
 })
 
@@ -84,59 +84,58 @@ const loginRules = {
 
 // 登录方法 - 使用真实后端认证
 const handleLogin = async () => {
-  await loginFormRef.value.validate(async (valid) => {
-    if (valid) {
-      loading.value = true
-      try {
-        // 调用真实登录API
-        const { data } = await authApi.login({
-          username: loginForm.username,
-          password: loginForm.password,
-          remember: loginForm.remember
-        })
-        
-        if (!data || !data.token) {
-          throw new Error('登录响应缺少必要信息')
-        }
-        
-        // 存储token和用户信息
-        localStorage.setItem('token', data.token)
-        if (data.userInfo) {
-          localStorage.setItem('userInfo', JSON.stringify(data.userInfo))
-        }
-        
-        // 更新store
-        userStore.setToken(data.token)
-        if (data.userInfo) {
-          userStore.setUserInfo(data.userInfo)
-        } else {
-          // 如果登录响应中没有用户信息，则获取用户信息
-          try {
-            const userInfoResponse = await authApi.getUserInfo()
-            if (userInfoResponse.data) {
-              localStorage.setItem('userInfo', JSON.stringify(userInfoResponse.data))
-              userStore.setUserInfo(userInfoResponse.data)
-            }
-          } catch (userInfoError) {
-            console.error('获取用户信息失败:', userInfoError)
-          }
-        }
-        
-        ElMessage.success('登录成功')
-        
-        // 如果有重定向地址，则跳转到重定向地址
-        const redirect = route.query.redirect || '/'
-        router.push(redirect)
-      } catch (error) {
-        console.error('登录失败:', error)
-        ElMessage.error(error.message || '登录失败，请检查用户名和密码')
-      } finally {
-        loading.value = false
-      }
-    } else {
+  try {
+    // 先验证表单
+    const valid = await loginFormRef.value.validate()
+    if (!valid) {
       return false
     }
-  })
+
+    // 开始登录流程
+    loading.value = true
+    
+    // 调用登录API
+    const response = await authApi.login({
+      username: loginForm.username,
+      password: loginForm.password,
+      remember: loginForm.remember
+    })
+
+    console.log('登录响应:', response)
+
+    // 简化检查，只要有token就认为登录成功
+    const { token, userInfo } = response.data || {}
+    
+    if (!token) {
+      throw new Error('登录失败：未获取到认证令牌')
+    }
+    
+    // 存储认证信息
+    localStorage.setItem('token', token)
+    userStore.setToken(token)
+
+    // 存储用户信息
+    if (userInfo) {
+      console.log('存储用户信息:', userInfo)
+      localStorage.setItem('userInfo', JSON.stringify(userInfo))
+      userStore.setUserInfo(userInfo)
+    }
+
+    ElMessage.success('登录成功')
+    
+    // 执行路由跳转
+    const redirect = route.query.redirect || '/dashboard'
+    console.log('准备跳转到:', redirect)
+    
+    // 直接跳转
+    await router.push(redirect)
+    
+  } catch (error) {
+    console.error('登录失败:', error)
+    ElMessage.error(error.message || '登录失败，请检查用户名和密码')
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 

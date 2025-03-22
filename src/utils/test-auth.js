@@ -365,6 +365,86 @@ export async function runAllTests() {
   console.log('===== 所有测试完成 =====')
 }
 
+/**
+ * 认证功能测试工具
+ */
+/**
+ * 测试登录功能
+ * @param {string} username 用户名
+ * @param {string} password 密码
+ */
+export const testLogin = async (username, password) => {
+  console.log('开始测试登录功能')
+  console.log(`尝试登录: ${username}`)
+  
+  try {
+    console.log('发送登录请求...')
+    const response = await authApi.login({ username, password })
+    
+    console.log('登录响应:', response)
+    
+    // 验证响应格式是否符合接口文档
+    if (response.code !== 200) {
+      throw new Error(`登录失败: ${response.message || '未知错误'}`)
+    }
+    
+    if (!response.data) {
+      throw new Error('响应缺少data字段')
+    }
+    
+    const { token, expires, userInfo } = response.data
+    
+    if (!token) {
+      throw new Error('响应缺少token字段')
+    }
+    
+    console.log('登录测试成功!')
+    console.log('获取到的token:', token ? '有效' : '无效')
+    console.log('过期时间:', expires)
+    console.log('用户信息:', userInfo)
+    
+    ElMessage.success('登录测试成功')
+    return { success: true, data: response.data }
+  } catch (error) {
+    console.error('登录测试失败:', error)
+    ElMessage.error(`登录测试失败: ${error.message}`)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * 测试获取用户信息功能
+ */
+export const testGetUserInfo = async () => {
+  console.log('开始测试获取用户信息功能')
+  
+  try {
+    console.log('发送获取用户信息请求...')
+    const response = await authApi.getUserInfo()
+    
+    console.log('获取用户信息响应:', response)
+    
+    // 验证响应格式是否符合接口文档
+    if (response.code !== 200) {
+      throw new Error(`获取用户信息失败: ${response.message || '未知错误'}`)
+    }
+    
+    if (!response.data) {
+      throw new Error('响应缺少data字段')
+    }
+    
+    console.log('获取用户信息测试成功!')
+    console.log('用户信息:', response.data)
+    
+    ElMessage.success('获取用户信息测试成功')
+    return { success: true, data: response.data }
+  } catch (error) {
+    console.error('获取用户信息测试失败:', error)
+    ElMessage.error(`获取用户信息测试失败: ${error.message}`)
+    return { success: false, error: error.message }
+  }
+}
+
 // 导出测试函数
 export default {
   testAuthFlow,

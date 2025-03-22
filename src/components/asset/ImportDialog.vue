@@ -270,6 +270,12 @@ const startUpload = async () => {
       return;
     }
     
+    // 检查是否收到了HTML内容而不是预期的JSON响应
+    if (typeof uploadResponse === 'string' && uploadResponse.includes('<html')) {
+      console.error('接收到HTML内容而不是JSON数据:', uploadResponse.substring(0, 100) + '...');
+      throw new Error('服务器返回了无效的响应格式，请联系管理员');
+    }
+    
     // 获取任务ID
     // 后端API返回的data字段直接就是taskId字符串
     if (!uploadResponse) {

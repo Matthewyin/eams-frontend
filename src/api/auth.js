@@ -4,7 +4,12 @@ import { API_PATHS } from './config'
 export const authApi = {
     // 用户登录
     login(data) {
-        return http.post(API_PATHS.AUTH.LOGIN, data)
+        // 确保只传入用户名和密码，符合接口文档要求
+        const loginData = {
+            username: data.username,
+            password: data.password
+        }
+        return http.post(API_PATHS.AUTH.LOGIN, loginData)
     },
 
     // 用户登出
