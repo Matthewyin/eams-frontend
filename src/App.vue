@@ -5,7 +5,6 @@
 </template>
 
 <script setup>
-// 修改这一行
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 </script>
 

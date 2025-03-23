@@ -2,14 +2,34 @@
   <div class="user-page">
     <div class="page-header">
       <h2>用户管理</h2>
-      <div class="header-actions">
-        <el-button type="primary" @click="handleAdd" v-permission="'user:create'">
-          <el-icon><Plus /></el-icon>新增用户
-        </el-button>
-      </div>
     </div>
 
     <el-card class="table-card">
+      <!-- 使用表格工具栏组件 -->
+      <table-toolbar 
+        :columns="columns" 
+        @refresh="fetchUsers" 
+        @size-change="handleDensityChange"
+        @column-change="handleColumnChange"
+      >
+        <template #left>
+          <el-button type="primary" @click="handleAdd">
+            <el-icon><Plus /></el-icon>
+            <span>新增用户</span>
+          </el-button>
+          
+          <el-button type="danger" :disabled="!selectedRows.length" @click="handleBatchDelete">
+            <el-icon><Delete /></el-icon>
+            <span>批量删除</span>
+          </el-button>
+          
+          <el-button @click="handleExport">
+            <el-icon><Download /></el-icon>
+            <span>导出</span>
+          </el-button>
+        </template>
+      </table-toolbar>
+
       <div class="table-toolbar">
         <div class="search-area">
           <el-input
@@ -26,14 +46,6 @@
             </template>
           </el-input>
         </div>
-        <div class="filter-area">
-          <el-select v-model="roleFilter" placeholder="角色" clearable @change="handleSearch">
-            <el-option v-for="role in roleOptions" :key="role.value" :label="role.label" :value="role.value" />
-          </el-select>
-          <el-select v-model="statusFilter" placeholder="状态" clearable @change="handleSearch">
-            <el-option v-for="status in statusOptions" :key="status.value" :label="status.label" :value="status.value" />
-          </el-select>
-        </div>
       </div>
 
       <el-table
@@ -41,58 +53,65 @@
         :data="userList"
         border
         style="width: 100%"
+        fit
         :size="tableDensity"
+        @selection-change="handleSelectionChange"
       >
-        <el-table-column prop="username" label="用户名" min-width="120" />
-        <el-table-column prop="name" label="姓名" min-width="120" />
-        <el-table-column prop="email" label="邮箱" min-width="180" />
-        <el-table-column prop="phone" label="手机号" min-width="140" />
-        <el-table-column label="角色" min-width="140">
-          <template #default="scope">
-            <el-tag v-for="role in scope.row.roles" :key="role" class="role-tag">
-              {{ getRoleName(role) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="状态" width="100">
-          <template #default="scope">
-            <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
-              {{ scope.row.status === 1 ? '启用' : '禁用' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="创建时间" min-width="180">
-          <template #default="scope">
-            {{ formatDate(scope.row.createdAt) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
-          <template #default="scope">
-            <el-button 
-              type="primary" 
-              link 
-              @click="handleEdit(scope.row)" 
-              v-permission="'user:edit'"
-            >
-              编辑
-            </el-button>
-            <el-button 
-              type="warning" 
-              link 
-              @click="handleResetPassword(scope.row)" 
-              v-permission="'user:reset-password'"
-            >
-              重置密码
-            </el-button>
-            <el-button 
-              type="danger" 
-              link 
-              @click="handleDelete(scope.row)"
-              v-if="scope.row.id !== userStore.userInfo.id"
-              v-permission="'user:delete'"
-            >
-              删除
-            </el-button>
+        <el-table-column type="selection" width="55" />
+        
+        <el-table-column 
+          v-for="col in visibleColumns" 
+          :key="col.prop" 
+          :prop="col.prop" 
+          :label="col.label" 
+          :width="col.width"
+          :show-overflow-tooltip="true"
+          :fixed="col.prop === 'actions' ? 'right' : false"
+        >
+          <template #default="scope" v-if="col.slot">
+            <template v-if="col.prop === 'roles'">
+              <el-tag v-for="role in scope.row.roles" :key="role" class="role-tag">
+                {{ getRoleName(role) }}
+              </el-tag>
+            </template>
+            
+            <template v-else-if="col.prop === 'status'">
+              <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
+                {{ scope.row.status === 1 ? '启用' : '禁用' }}
+              </el-tag>
+            </template>
+            
+            <template v-else-if="col.prop === 'actions'">
+              <el-button 
+                type="primary" 
+                link 
+                @click="handleView(scope.row)" 
+              >
+                查看
+              </el-button>
+              <el-button 
+                type="primary" 
+                link 
+                @click="handleEdit(scope.row)" 
+              >
+                编辑
+              </el-button>
+              <el-button 
+                type="warning" 
+                link 
+                @click="handleResetPassword(scope.row)" 
+              >
+                重置密码
+              </el-button>
+              <el-button 
+                type="danger" 
+                link 
+                @click="handleDelete(scope.row)"
+                v-if="scope.row.id !== userStore.userInfo.id"
+              >
+                删除
+              </el-button>
+            </template>
           </template>
         </el-table-column>
       </el-table>
@@ -104,7 +123,7 @@
           :page-sizes="[10, 20, 50, 100]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="pagination.total"
-          @size-change="handleSizeChange"
+          @size-change="handlePageSizeChange"
           @current-change="handleCurrentChange"
         />
       </div>
@@ -123,36 +142,63 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Search } from '@element-plus/icons-vue'
+import { Plus, Search, Delete, Download } from '@element-plus/icons-vue'
 import { userApi } from '@/api/user'
 import { useUserStore } from '@/store/modules/user'
 import { useAppStore } from '@/store/modules/app'
+import { useRouter } from 'vue-router'
 import UserFormDialog from '@/components/user/UserFormDialog.vue'
+import TableToolbar from '@/components/common/TableToolbar.vue'
 import { formatDate } from '@/utils/format'
 
 const userStore = useUserStore()
 const appStore = useAppStore()
+const router = useRouter()
+
+// 检查用户是否有权限访问该页面
+const checkAdminPermission = () => {
+  const userRoles = userStore.userInfo.roles || []
+  const isAdmin = userRoles.some(role => 
+    ['admin', 'administrator', 'ADMIN', 'SUPER_ADMIN'].includes(role)
+  )
+  
+  if (!isAdmin) {
+    ElMessage.error('只有管理员和超级管理员可以使用用户管理功能')
+    router.push('/dashboard')
+    return false
+  }
+  
+  return true
+}
 
 // 表格密度
-const tableDensity = computed(() => appStore.tableDensity)
+const tableDensity = computed(() => appStore.tableDensity || 'default')
+
+// 表格列配置
+const columns = ref([
+  { prop: 'username', label: '用户名', width: '120', visible: true },
+  { prop: 'realName', label: '姓名', width: '120', visible: true },
+  { prop: 'email', label: '邮箱', width: '180', visible: true },
+  { prop: 'phone', label: '手机号', width: '140', visible: true },
+  { prop: 'department', label: '部门', width: '140', visible: true },
+  { prop: 'roles', label: '角色', width: '140', visible: true, slot: true },
+  { prop: 'status', label: '状态', width: '100', visible: true, slot: true },
+  { prop: 'actions', label: '操作', width: '250', visible: true, slot: true }
+])
+
+// 可见列
+const visibleColumns = computed(() => columns.value.filter(col => col.visible))
 
 // 搜索和筛选条件
 const searchQuery = ref('')
-const roleFilter = ref('')
-const statusFilter = ref('')
 
 // 角色选项
 const roleOptions = ref([])
 
-// 状态选项
-const statusOptions = [
-  { value: 1, label: '启用' },
-  { value: 0, label: '禁用' }
-]
-
 // 表格数据
 const userList = ref([])
 const loading = ref(false)
+const selectedRows = ref([])
 
 // 分页
 const pagination = reactive({
@@ -175,24 +221,25 @@ const fetchRoles = async () => {
     }))
   } catch (error) {
     console.error('获取角色列表失败:', error)
+    ElMessage.error('角色列表获取失败')
   }
 }
 
 // 获取用户列表
 const fetchUsers = async () => {
+  if (!checkAdminPermission()) return
+  
   loading.value = true
   try {
     const params = {
-      page: pagination.currentPage,
-      limit: pagination.pageSize,
-      query: searchQuery.value,
-      role: roleFilter.value,
-      status: statusFilter.value
+      page: pagination.currentPage - 1,
+      size: pagination.pageSize,
+      query: searchQuery.value
     }
     
     const res = await userApi.getUsers(params)
-    userList.value = res.data.items || []
-    pagination.total = res.data.total || 0
+    userList.value = res.data.content || []
+    pagination.total = res.data.totalElements || 0
   } catch (error) {
     console.error('获取用户列表失败:', error)
     ElMessage.error('获取用户列表失败')
@@ -214,7 +261,7 @@ const handleSearch = () => {
 }
 
 // 处理分页大小变化
-const handleSizeChange = (size) => {
+const handlePageSizeChange = (size) => {
   pagination.pageSize = size
   fetchUsers()
 }
@@ -225,22 +272,42 @@ const handleCurrentChange = (page) => {
   fetchUsers()
 }
 
+// 处理查看用户详情
+const handleView = (user) => {
+  router.push(`/user/${user.id}`)
+}
+
 // 处理添加用户
 const handleAdd = () => {
+  // 不阻止操作，只显示提示
+  if (!userStore.hasPermission('user:create')) {
+    ElMessage.warning('您可能没有创建用户的权限，操作可能会失败')
+  }
+  
   currentUser.value = null
   dialogVisible.value = true
 }
 
 // 处理编辑用户
 const handleEdit = (user) => {
+  // 不阻止操作，只显示提示
+  if (!userStore.hasPermission('user:edit')) {
+    ElMessage.warning('您可能没有编辑用户的权限，操作可能会失败')
+  }
+  
   currentUser.value = { ...user }
   dialogVisible.value = true
 }
 
 // 处理重置密码
 const handleResetPassword = (user) => {
+  // 不阻止操作，只显示提示
+  if (!userStore.hasPermission('user:reset-password')) {
+    ElMessage.warning('您可能没有重置密码的权限，操作可能会失败')
+  }
+  
   ElMessageBox.confirm(
-    `确定要重置用户 "${user.name}" 的密码吗？`,
+    `确定要重置用户 "${user.realName || user.username}" 的密码吗？`,
     '重置密码',
     {
       confirmButtonText: '确定',
@@ -260,8 +327,13 @@ const handleResetPassword = (user) => {
 
 // 处理删除用户
 const handleDelete = (user) => {
+  // 不阻止操作，只显示提示
+  if (!userStore.hasPermission('user:delete')) {
+    ElMessage.warning('您可能没有删除用户的权限，操作可能会失败')
+  }
+  
   ElMessageBox.confirm(
-    `确定要删除用户 "${user.name}" 吗？`,
+    `确定要删除用户 "${user.realName || user.username}" 吗？`,
     '删除用户',
     {
       confirmButtonText: '确定',
@@ -280,6 +352,67 @@ const handleDelete = (user) => {
   }).catch(() => {})
 }
 
+// 处理批量删除
+const handleBatchDelete = () => {
+  // 不阻止操作，只显示提示
+  if (!userStore.hasPermission('user:delete')) {
+    ElMessage.warning('您可能没有删除用户的权限，操作可能会失败')
+  }
+  
+  if (selectedRows.value.length === 0) return
+  
+  ElMessageBox.confirm(
+    `确定要删除选中的 ${selectedRows.value.length} 个用户吗？`,
+    '批量删除用户',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'danger'
+    }
+  ).then(async () => {
+    try {
+      const currentUserInSelected = selectedRows.value.some(row => row.id === userStore.userInfo.id)
+      if (currentUserInSelected) {
+        ElMessage.warning('不能删除当前登录用户，其他用户将被删除')
+      }
+      
+      const deletePromises = selectedRows.value
+        .filter(row => row.id !== userStore.userInfo.id)
+        .map(row => userApi.deleteUser(row.id))
+      
+      await Promise.all(deletePromises)
+      ElMessage.success('用户删除成功')
+      fetchUsers()
+    } catch (error) {
+      console.error('批量删除用户失败:', error)
+      ElMessage.error('批量删除用户失败')
+    }
+  }).catch(() => {})
+}
+
+// 处理导出用户
+const handleExport = () => {
+  if (!userStore.checkAndNotifyPermission('user:export', '导出用户')) return
+  
+  ElMessage.info('导出用户功能开发中')
+  // TODO: 实现导出用户功能
+}
+
+// 处理表格行选择变化
+const handleSelectionChange = (selection) => {
+  selectedRows.value = selection
+}
+
+// 处理表格密度变化
+const handleDensityChange = (size) => {
+  appStore.setTableDensity(size)
+}
+
+// 处理列变化
+const handleColumnChange = () => {
+  localStorage.setItem('userColumns', JSON.stringify(columns.value))
+}
+
 // 处理表单提交成功
 const handleSuccess = () => {
   fetchUsers()
@@ -287,8 +420,16 @@ const handleSuccess = () => {
 
 // 初始化
 onMounted(() => {
-  fetchRoles()
-  fetchUsers()
+  if (checkAdminPermission()) {
+    // 加载本地保存的列配置
+    const savedColumns = localStorage.getItem('userColumns')
+    if (savedColumns) {
+      columns.value = JSON.parse(savedColumns)
+    }
+    
+    fetchRoles()
+    fetchUsers()
+  }
 })
 </script>
 
@@ -306,21 +447,21 @@ onMounted(() => {
 
 .table-card {
   margin-bottom: 20px;
+  width: 100%;
+}
+
+.el-table {
+  width: 100% !important;
 }
 
 .table-toolbar {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   margin-bottom: 20px;
 }
 
 .search-area {
   width: 300px;
-}
-
-.filter-area {
-  display: flex;
-  gap: 10px;
 }
 
 .role-tag {

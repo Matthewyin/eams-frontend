@@ -50,6 +50,28 @@ const routes = [
                 component: () => import('@/views/log/index.vue'),
                 meta: { title: '操作日志', icon: 'List' }
             },
+            {
+                path: 'user',
+                name: 'User',
+                component: () => import('@/views/user/index.vue'),
+                meta: { 
+                    title: '用户管理', 
+                    icon: 'User', 
+                    permissions: ['user:view'],
+                    requiresAdmin: true
+                }
+            },
+            {
+                path: 'user/:id',
+                name: 'UserDetail',
+                component: () => import('@/views/user/detail.vue'),
+                meta: { 
+                    title: '用户详情', 
+                    hidden: true, 
+                    permissions: ['user:view'],
+                    requiresAdmin: true
+                }
+            },
         ]
     },
     {
@@ -123,6 +145,23 @@ router.beforeEach(async (to, from, next) => {
         console.log('已登录用户访问登录页，重定向到仪表盘')
         next({ name: 'Dashboard' })
         return
+    }
+
+    // 检查是否需要管理员权限
+    if (to.meta && to.meta.requiresAdmin) {
+        const userRoles = userStore.userInfo.roles || []
+        const isAdmin = userRoles.some(role => 
+            ['admin', 'administrator', 'ADMIN', 'SUPER_ADMIN'].includes(role)
+        )
+        
+        if (!isAdmin) {
+            console.log('用户没有访问管理员页面的权限，用户角色:', userRoles)
+            ElMessage.error('只有管理员和超级管理员可以访问此页面')
+            next({ name: 'Dashboard' })
+            return
+        } else {
+            console.log('用户拥有管理员权限，允许访问管理员页面')
+        }
     }
 
     // 进行路由跳转

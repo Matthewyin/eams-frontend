@@ -2,7 +2,13 @@
  * 用户管理API
  */
 import http from './http'
-import { API_PATHS } from './config'
+
+// API路径
+const API_PATHS = {
+  USERS: '/api/users',
+  USER_DETAIL: '/api/users/',
+  ROLES: '/api/roles/all'
+}
 
 export const userApi = {
   /**
@@ -11,7 +17,7 @@ export const userApi = {
    * @returns {Promise}
    */
   getUsers(params) {
-    return http.get(API_PATHS.USER.LIST, { params })
+    return http.get(API_PATHS.USERS, { params })
   },
   
   /**
@@ -20,7 +26,7 @@ export const userApi = {
    * @returns {Promise}
    */
   getUser(id) {
-    return http.get(`${API_PATHS.USER.DETAIL}${id}`)
+    return http.get(`${API_PATHS.USER_DETAIL}${id}`)
   },
   
   /**
@@ -29,7 +35,7 @@ export const userApi = {
    * @returns {Promise}
    */
   createUser(data) {
-    return http.post(API_PATHS.USER.LIST, data)
+    return http.post(API_PATHS.USERS, data)
   },
   
   /**
@@ -39,7 +45,7 @@ export const userApi = {
    * @returns {Promise}
    */
   updateUser(id, data) {
-    return http.put(`${API_PATHS.USER.DETAIL}${id}`, data)
+    return http.put(`${API_PATHS.USER_DETAIL}${id}`, data)
   },
   
   /**
@@ -48,7 +54,7 @@ export const userApi = {
    * @returns {Promise}
    */
   deleteUser(id) {
-    return http.delete(`${API_PATHS.USER.DETAIL}${id}`)
+    return http.delete(`${API_PATHS.USER_DETAIL}${id}`)
   },
   
   /**
@@ -57,7 +63,7 @@ export const userApi = {
    * @returns {Promise}
    */
   resetPassword(id) {
-    return http.post(`${API_PATHS.USER.RESET_PASSWORD}${id}`)
+    return http.post(`${API_PATHS.USER_DETAIL}reset-password/${id}`)
   },
   
   /**
@@ -65,6 +71,6 @@ export const userApi = {
    * @returns {Promise}
    */
   getRoles() {
-    return http.get(API_PATHS.USER.ROLES)
+    return http.get(API_PATHS.ROLES)
   }
 }

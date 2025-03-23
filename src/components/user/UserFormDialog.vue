@@ -13,12 +13,12 @@
       label-width="100px"
       :disabled="loading"
     >
-      <el-form-item label="用户名" prop="username">
-        <el-input v-model="form.username" :disabled="!!user" />
+      <el-form-item label="用户名" prop="username" v-if="!user">
+        <el-input v-model="form.username" />
       </el-form-item>
       
-      <el-form-item label="姓名" prop="name">
-        <el-input v-model="form.name" />
+      <el-form-item label="姓名" prop="realName">
+        <el-input v-model="form.realName" />
       </el-form-item>
       
       <el-form-item label="邮箱" prop="email">
@@ -27,6 +27,10 @@
       
       <el-form-item label="手机号" prop="phone">
         <el-input v-model="form.phone" />
+      </el-form-item>
+      
+      <el-form-item label="部门" prop="department">
+        <el-input v-model="form.department" />
       </el-form-item>
       
       <el-form-item label="角色" prop="roles">
@@ -110,9 +114,10 @@ const loading = ref(false)
 // 表单数据
 const form = ref({
   username: '',
-  name: '',
+  realName: '',
   email: '',
   phone: '',
+  department: '',
   roles: [],
   status: 1,
   password: ''
@@ -125,7 +130,7 @@ const rules = {
     { min: 3, max: 20, message: '长度在 3 到 20 个字符', trigger: 'blur' },
     { pattern: /^[a-zA-Z0-9_]+$/, message: '只能包含字母、数字和下划线', trigger: 'blur' }
   ],
-  name: [
+  realName: [
     { required: true, message: '请输入姓名', trigger: 'blur' }
   ],
   email: [
@@ -135,6 +140,9 @@ const rules = {
   phone: [
     { required: true, message: '请输入手机号', trigger: 'blur' },
     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
+  ],
+  department: [
+    { required: true, message: '请输入部门', trigger: 'blur' }
   ],
   roles: [
     { required: true, message: '请选择角色', trigger: 'change' },
@@ -149,9 +157,10 @@ const rules = {
 const resetForm = () => {
   form.value = {
     username: '',
-    name: '',
+    realName: '',
     email: '',
     phone: '',
+    department: '',
     roles: [],
     status: 1,
     password: ''
@@ -166,9 +175,10 @@ watch(() => props.user, (newVal) => {
   if (newVal) {
     form.value = {
       username: newVal.username || '',
-      name: newVal.name || '',
+      realName: newVal.realName || '',
       email: newVal.email || '',
       phone: newVal.phone || '',
+      department: newVal.department || '',
       roles: newVal.roles || [],
       status: newVal.status !== undefined ? newVal.status : 1,
       password: '' // 编辑时不需要密码
@@ -195,8 +205,18 @@ const submitForm = async () => {
       }
       
       if (props.user) {
+        // 更新用户时只提交允许的字段
+        const updateData = {
+          realName: formData.realName,
+          email: formData.email,
+          phone: formData.phone,
+          department: formData.department,
+          roles: formData.roles,
+          status: formData.status
+        }
+        
         // 更新用户
-        await userApi.updateUser(props.user.id, formData)
+        await userApi.updateUser(props.user.id, updateData)
         ElMessage.success('用户更新成功')
       } else {
         // 创建用户
@@ -208,7 +228,7 @@ const submitForm = async () => {
       emit('success')
     } catch (error) {
       console.error('保存用户失败:', error)
-      ElMessage.error('保存用户失败')
+      ElMessage.error(error.response?.data?.message || '保存用户失败')
     } finally {
       loading.value = false
     }
