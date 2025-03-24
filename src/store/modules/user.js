@@ -54,6 +54,15 @@ export const useUserStore = defineStore('user', () => {
         userInfo.value = newUserInfo
         localStorage.setItem('userInfo', JSON.stringify(newUserInfo))
     }
+    
+    // 更新用户信息
+    const updateUserInfo = (updatedInfo) => {
+        console.log('更新用户信息:', updatedInfo)
+        // 合并现有用户信息和更新的信息
+        const newUserInfo = { ...userInfo.value, ...updatedInfo }
+        setUserInfo(newUserInfo)
+        return newUserInfo
+    }
 
     // 登录 - 使用真实后端认证
     const login = async (loginData) => {
@@ -144,6 +153,7 @@ export const useUserStore = defineStore('user', () => {
         token,
         userInfo,
         isLoggedIn,
+        updateUserInfo,
         username,
         avatar,
         roles,

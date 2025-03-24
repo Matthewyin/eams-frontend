@@ -84,6 +84,10 @@
             </div>
             <template #dropdown>
               <el-dropdown-menu>
+                <el-dropdown-item @click="navigateTo('/profile')">
+                  <el-icon><UserFilled /></el-icon>
+                  <span>个人信息</span>
+                </el-dropdown-item>
                 <el-dropdown-item @click="handleLogout">
                   <el-icon><SwitchButton /></el-icon>
                   <span>退出登录</span>
@@ -135,6 +139,7 @@ import { useAppStore } from '@/store/modules/app'
 import { useUserStore } from '@/store/modules/user'
 import Breadcrumb from '@/components/common/Breadcrumb.vue'
 import { ElMessage } from 'element-plus'
+import { UserFilled, SwitchButton, Fold, Expand, FullScreen, Monitor } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()

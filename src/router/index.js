@@ -72,6 +72,16 @@ const routes = [
                     requiresAdmin: true
                 }
             },
+            {
+                path: 'profile',
+                name: 'Profile',
+                component: () => import('@/views/profile/index.vue'),
+                meta: { 
+                    title: '个人信息', 
+                    icon: 'UserFilled',
+                    hidden: false
+                }
+            },
         ]
     },
     {

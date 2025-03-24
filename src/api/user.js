@@ -7,6 +7,13 @@ import http from './http'
 const API_PATHS = {
   USERS: '/api/users',
   USER_DETAIL: '/api/users/',
+  USER_PROFILE: '/api/users/profile',
+  CHANGE_PASSWORD: '/api/users/change-password',
+  USER_AVATAR: '/api/users/',
+  CURRENT_USER_AVATAR: '/api/users/profile/avatar',
+  CURRENT_USER_AVATAR_UPLOAD: '/api/users/profile/avatar/upload',
+  USER_AVATAR_UPLOAD: '/api/users/',
+  USER_UNLOCK: '/api/users/',
   ROLES: '/api/roles/all'
 }
 
@@ -72,5 +79,82 @@ export const userApi = {
    */
   getRoles() {
     return http.get(API_PATHS.ROLES)
+  },
+  
+  /**
+   * 更新当前用户信息
+   * @param {Object} data - 用户个人信息数据（realName, email, phone）
+   * @returns {Promise}
+   */
+  updateProfile(data) {
+    return http.put(API_PATHS.USER_PROFILE, data)
+  },
+  
+  /**
+   * 修改当前用户密码
+   * @param {Object} data - 密码数据（oldPassword, newPassword, confirmPassword）
+   * @returns {Promise}
+   */
+  changePassword(data) {
+    return http.post(API_PATHS.CHANGE_PASSWORD, data)
+  },
+  
+  /**
+   * 更新用户头像
+   * @param {number} userId - 用户ID
+   * @param {string} avatarUrl - 头像地址
+   * @returns {Promise}
+   */
+  updateUserAvatar(userId, avatarUrl) {
+    return http.put(`${API_PATHS.USER_DETAIL}${userId}/avatar`, { avatarUrl })
+  },
+  
+  /**
+   * 更新当前用户头像
+   * @param {string} avatarUrl - 头像地址
+   * @returns {Promise}
+   */
+  updateCurrentUserAvatar(avatarUrl) {
+    return http.put(API_PATHS.CURRENT_USER_AVATAR, { avatarUrl })
+  },
+  
+  /**
+   * 上传当前用户头像文件
+   * @param {File} file - 头像文件
+   * @returns {Promise}
+   */
+  uploadCurrentUserAvatar(file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return http.post(API_PATHS.CURRENT_USER_AVATAR_UPLOAD, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+  },
+  
+  /**
+   * 上传用户头像文件
+   * @param {number} userId - 用户ID
+   * @param {File} file - 头像文件
+   * @returns {Promise}
+   */
+  uploadUserAvatar(userId, file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return http.post(`${API_PATHS.USER_AVATAR_UPLOAD}${userId}/avatar/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+  },
+  
+  /**
+   * 解锁用户账户
+   * @param {number} userId - 用户ID
+   * @returns {Promise}
+   */
+  unlockUserAccount(userId) {
+    return http.post(`${API_PATHS.USER_UNLOCK}${userId}/unlock`)
   }
 }
