@@ -103,25 +103,46 @@ const handleLogin = async () => {
 
     console.log('登录响应:', response)
 
-    // 简化检查，只要有token就认为登录成功
-    const { token, userInfo } = response.data || {}
+    // 处理不同的登录状态
+    const { token, userInfo, status, remainingAttempts, unlockTime } = response.data || {}
     
-    if (!token) {
+    // 根据登录状态处理不同情况
+    if (status === 'LOCKED') {
+      // 账户已锁定
+      if (unlockTime) {
+        // 计算剩余锁定时间
+        const unlockDateTime = new Date(unlockTime);
+        const now = new Date();
+        const diffMinutes = Math.ceil((unlockDateTime - now) / (1000 * 60));
+        throw new Error(`账户已锁定，请在${diffMinutes}分钟后再试`);
+      } else {
+        throw new Error('账户已锁定，请联系管理员解锁');
+      }
+    } else if (status === 'FAILED') {
+      // 登录失败，显示剩余尝试次数
+      if (remainingAttempts !== undefined) {
+        throw new Error(`密码错误，还有${remainingAttempts}次尝试机会`);
+      } else {
+        throw new Error('密码错误，请重试');
+      }
+    } else if (status === 'SUCCESS' && token) {
+      // 登录成功
+      // 存储认证信息
+      localStorage.setItem('token', token)
+      userStore.setToken(token)
+
+      // 存储用户信息
+      if (userInfo) {
+        console.log('存储用户信息:', userInfo)
+        localStorage.setItem('userInfo', JSON.stringify(userInfo))
+        userStore.setUserInfo(userInfo)
+      }
+
+      ElMessage.success('登录成功')
+    } else {
+      // 未知状态
       throw new Error('登录失败：未获取到认证令牌')
     }
-    
-    // 存储认证信息
-    localStorage.setItem('token', token)
-    userStore.setToken(token)
-
-    // 存储用户信息
-    if (userInfo) {
-      console.log('存储用户信息:', userInfo)
-      localStorage.setItem('userInfo', JSON.stringify(userInfo))
-      userStore.setUserInfo(userInfo)
-    }
-
-    ElMessage.success('登录成功')
     
     // 执行路由跳转
     const redirect = route.query.redirect || '/dashboard'
@@ -132,7 +153,12 @@ const handleLogin = async () => {
     
   } catch (error) {
     console.error('登录失败:', error)
-    ElMessage.error(error.message || '登录失败，请检查用户名和密码')
+    // 使用 ElMessage.warning 来显示账户锁定和密码错误信息
+    if (error.message && (error.message.includes('账户已锁定') || error.message.includes('还有'))) {
+      ElMessage.warning(error.message)
+    } else {
+      ElMessage.error(error.message || '登录失败，请检查用户名和密码')
+    }
   } finally {
     loading.value = false
   }
