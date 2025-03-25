@@ -73,6 +73,39 @@ const routes = [
                 }
             },
             {
+                path: 'department',
+                name: 'Department',
+                component: () => import('@/views/department/index.vue'),
+                meta: { 
+                    title: '部门管理', 
+                    icon: 'OfficeBuilding', 
+                    permissions: ['department:view'],
+                    requiresAdmin: true
+                }
+            },
+            {
+                path: 'group',
+                name: 'Group',
+                component: () => import('@/views/group/index.vue'),
+                meta: { 
+                    title: '用户组管理', 
+                    icon: 'UserFilled', 
+                    permissions: ['group:view'],
+                    requiresAdmin: true
+                }
+            },
+            {
+                path: 'permission',
+                name: 'Permission',
+                component: () => import('@/views/permission/index.vue'),
+                meta: { 
+                    title: '权限管理', 
+                    icon: 'Lock', 
+                    permissions: ['permission:view'],
+                    requiresAdmin: true
+                }
+            },
+            {
                 path: 'profile',
                 name: 'Profile',
                 component: () => import('@/views/profile/index.vue'),

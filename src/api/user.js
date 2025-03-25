@@ -14,6 +14,11 @@ const API_PATHS = {
   CURRENT_USER_AVATAR_UPLOAD: '/api/users/profile/avatar/upload',
   USER_AVATAR_UPLOAD: '/api/users/',
   USER_UNLOCK: '/api/users/',
+  BATCH_USERS: '/api/users/batch',
+  BATCH_ENABLE: '/api/users/batch/enable',
+  BATCH_DISABLE: '/api/users/batch/disable',
+  BATCH_ROLES: '/api/users/batch/roles',
+  BATCH_UNLOCK: '/api/users/batch/unlock',
   ROLES: '/api/roles/all'
 }
 
@@ -156,5 +161,60 @@ export const userApi = {
    */
   unlockUserAccount(userId) {
     return http.post(`${API_PATHS.USER_UNLOCK}${userId}/unlock`)
+  },
+  
+  /**
+   * 批量创建用户
+   * @param {Array} users - 用户数据数组
+   * @returns {Promise}
+   */
+  batchCreateUsers(users) {
+    return http.post(API_PATHS.BATCH_USERS, users)
+  },
+  
+  /**
+   * 批量删除用户
+   * @param {Array} ids - 用户ID数组
+   * @returns {Promise}
+   */
+  batchDeleteUsers(ids) {
+    return http.delete(API_PATHS.BATCH_USERS, { data: ids })
+  },
+  
+  /**
+   * 批量启用用户
+   * @param {Array} ids - 用户ID数组
+   * @returns {Promise}
+   */
+  batchEnableUsers(ids) {
+    return http.post(API_PATHS.BATCH_ENABLE, ids)
+  },
+  
+  /**
+   * 批量禁用用户
+   * @param {Array} ids - 用户ID数组
+   * @returns {Promise}
+   */
+  batchDisableUsers(ids) {
+    return http.post(API_PATHS.BATCH_DISABLE, ids)
+  },
+  
+  /**
+   * 批量分配角色
+   * @param {Array} userIds - 用户ID数组
+   * @param {Array} roleIds - 角色ID数组
+   * @returns {Promise}
+   */
+  batchAssignRoles(userIds, roleIds) {
+    return http.post(API_PATHS.BATCH_ROLES, { userIds, roleIds })
+  },
+  
+  /**
+   * 批量解锁用户账户
+   * @param {Array} userIds - 用户ID数组
+   * @returns {Promise}
+   */
+  batchUnlockUserAccounts(userIds) {
+    return http.post(API_PATHS.BATCH_UNLOCK, { userIds })
   }
 }

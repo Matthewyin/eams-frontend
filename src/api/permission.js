@@ -77,6 +77,15 @@ export const permissionApi = {
   },
   
   /**
+   * 获取用户权限编码
+   * @param {number|string} userId - 用户ID
+   * @returns {Promise}
+   */
+  getUserPermissionCodes(userId) {
+    return http.get(`${API_PATHS.PERMISSION.USER}${userId}/codes`)
+  },
+  
+  /**
    * 获取用户菜单
    * @param {number|string} userId - 用户ID
    * @returns {Promise}

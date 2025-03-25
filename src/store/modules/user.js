@@ -51,6 +51,10 @@ export const useUserStore = defineStore('user', () => {
     // 设置用户信息
     const setUserInfo = (newUserInfo) => {
         console.log('设置新用户信息:', newUserInfo)
+        // 确保 accountNonLocked 属性存在，如果不存在则默认为 true
+        if (newUserInfo && newUserInfo.accountNonLocked === undefined) {
+            newUserInfo.accountNonLocked = true
+        }
         userInfo.value = newUserInfo
         localStorage.setItem('userInfo', JSON.stringify(newUserInfo))
     }

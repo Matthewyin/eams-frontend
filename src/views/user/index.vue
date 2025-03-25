@@ -23,6 +23,18 @@
             <span>批量删除</span>
           </el-button>
           
+          <el-dropdown v-if="selectedRows.length" @command="handleBatchCommand" split-button type="primary">
+            <span>批量操作</span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="enable">批量启用</el-dropdown-item>
+                <el-dropdown-item command="disable">批量禁用</el-dropdown-item>
+                <el-dropdown-item command="unlock">批量解锁账户</el-dropdown-item>
+                <el-dropdown-item command="assignRoles">批量分配角色</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+          
           <el-button @click="handleExport">
             <el-icon><Download /></el-icon>
             <span>导出</span>
@@ -81,6 +93,12 @@
               </el-tag>
             </template>
             
+            <template v-else-if="col.prop === 'accountNonLocked'">
+              <el-tag :type="scope.row.accountNonLocked ? 'success' : 'danger'">
+                {{ scope.row.accountNonLocked ? '正常' : '锁定' }}
+              </el-tag>
+            </template>
+            
             <template v-else-if="col.prop === 'actions'">
               <el-button 
                 type="primary" 
@@ -102,6 +120,14 @@
                 @click="handleResetPassword(scope.row)" 
               >
                 重置密码
+              </el-button>
+              <el-button 
+                type="success" 
+                link 
+                @click="handleUnlockAccount(scope.row)"
+                v-if="!scope.row.accountNonLocked"
+              >
+                解锁账户
               </el-button>
               <el-button 
                 type="danger" 
@@ -150,6 +176,7 @@ import { useRouter } from 'vue-router'
 import UserFormDialog from '@/components/user/UserFormDialog.vue'
 import TableToolbar from '@/components/common/TableToolbar.vue'
 import { formatDate } from '@/utils/format'
+import RoleSelectDialog from '@/components/user/RoleSelectDialog.vue'
 
 const userStore = useUserStore()
 const appStore = useAppStore()
@@ -183,7 +210,8 @@ const columns = ref([
   { prop: 'department', label: '部门', width: '140', visible: true },
   { prop: 'roles', label: '角色', width: '140', visible: true, slot: true },
   { prop: 'status', label: '状态', width: '100', visible: true, slot: true },
-  { prop: 'actions', label: '操作', width: '250', visible: true, slot: true }
+  { prop: 'accountNonLocked', label: '账户状态', width: '120', visible: true, slot: true },
+  { prop: 'actions', label: '操作', width: '280', visible: true, slot: true }
 ])
 
 // 可见列
@@ -416,6 +444,178 @@ const handleColumnChange = () => {
 // 处理表单提交成功
 const handleSuccess = () => {
   fetchUsers()
+}
+
+// 处理解锁用户账户
+const handleUnlockAccount = (user) => {
+  ElMessageBox.confirm(
+    `确定要解锁用户 ${user.username} 的账户吗？`,
+    '解锁账户确认',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(() => {
+    loading.value = true
+    userApi.unlockUserAccount(user.id)
+      .then(response => {
+        ElMessage.success('用户账户解锁成功')
+        fetchUsers() // 刷新用户列表
+      })
+      .catch(error => {
+        console.error('解锁用户账户失败:', error)
+        ElMessage.error(error.response?.data?.message || '解锁用户账户失败')
+      })
+      .finally(() => {
+        loading.value = false
+      })
+  }).catch(() => {
+    // 用户取消操作
+  })
+}
+
+// 处理批量操作
+const handleBatchCommand = (command) => {
+  if (!selectedRows.value.length) {
+    ElMessage.warning('请选择要操作的用户')
+    return
+  }
+  
+  switch (command) {
+    case 'enable':
+      handleBatchEnable()
+      break
+    case 'disable':
+      handleBatchDisable()
+      break
+    case 'unlock':
+      handleBatchUnlock()
+      break
+    case 'assignRoles':
+      roleDialogVisible.value = true
+      break
+    default:
+      break
+  }
+}
+
+// 批量启用用户
+const handleBatchEnable = () => {
+  const ids = selectedRows.value.map(row => row.id)
+  
+  ElMessageBox.confirm(
+    `确定要启用选中的 ${ids.length} 个用户吗？`,
+    '批量启用确认',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(() => {
+    loading.value = true
+    userApi.batchEnableUsers(ids)
+      .then(response => {
+        ElMessage.success(`成功启用 ${response.data.count} 个用户`)
+        fetchUsers() // 刷新用户列表
+      })
+      .catch(error => {
+        console.error('批量启用用户失败:', error)
+        ElMessage.error(error.response?.data?.message || '批量启用用户失败')
+      })
+      .finally(() => {
+        loading.value = false
+      })
+  }).catch(() => {
+    // 用户取消操作
+  })
+}
+
+// 批量禁用用户
+const handleBatchDisable = () => {
+  const ids = selectedRows.value.map(row => row.id)
+  
+  ElMessageBox.confirm(
+    `确定要禁用选中的 ${ids.length} 个用户吗？`,
+    '批量禁用确认',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(() => {
+    loading.value = true
+    userApi.batchDisableUsers(ids)
+      .then(response => {
+        ElMessage.success(`成功禁用 ${response.data.count} 个用户`)
+        fetchUsers() // 刷新用户列表
+      })
+      .catch(error => {
+        console.error('批量禁用用户失败:', error)
+        ElMessage.error(error.response?.data?.message || '批量禁用用户失败')
+      })
+      .finally(() => {
+        loading.value = false
+      })
+  }).catch(() => {
+    // 用户取消操作
+  })
+}
+
+// 批量解锁用户账户
+const handleBatchUnlock = () => {
+  const ids = selectedRows.value.map(row => row.id)
+  
+  ElMessageBox.confirm(
+    `确定要解锁选中的 ${ids.length} 个用户账户吗？`,
+    '批量解锁账户确认',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(() => {
+    loading.value = true
+    userApi.batchUnlockUserAccounts({ userIds: ids })
+      .then(response => {
+        ElMessage.success(`成功解锁 ${response.data.count} 个用户账户`)
+        fetchUsers() // 刷新用户列表
+      })
+      .catch(error => {
+        console.error('批量解锁用户账户失败:', error)
+        ElMessage.error(error.response?.data?.message || '批量解锁用户账户失败')
+      })
+      .finally(() => {
+        loading.value = false
+      })
+  }).catch(() => {
+    // 用户取消操作
+  })
+}
+
+// 批量分配角色
+const handleBatchAssignRoles = (roleIds) => {
+  if (!roleIds || !roleIds.length) {
+    ElMessage.warning('请选择要分配的角色')
+    return
+  }
+  
+  const userIds = selectedRows.value.map(row => row.id)
+  
+  loading.value = true
+  userApi.batchAssignRoles(userIds, roleIds)
+    .then(response => {
+      ElMessage.success(`成功为 ${response.data.count} 个用户分配角色`)
+      fetchUsers() // 刷新用户列表
+    })
+    .catch(error => {
+      console.error('批量分配角色失败:', error)
+      ElMessage.error(error.response?.data?.message || '批量分配角色失败')
+    })
+    .finally(() => {
+      loading.value = false
+      roleDialogVisible.value = false
+    })
 }
 
 // 初始化
