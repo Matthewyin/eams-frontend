@@ -172,7 +172,7 @@ const router = useRouter()
 const checkAdminPermission = () => {
   const userRoles = userStore.userInfo.roles || []
   const isAdmin = userRoles.some(role => 
-    ['admin', 'administrator', 'ADMIN', 'SUPER_ADMIN'].includes(role)
+    ['admin', 'administrator', 'ADMIN', 'SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN'].includes(role)
   )
   
   if (!isAdmin) {
@@ -362,8 +362,12 @@ const handleColumnChange = () => {
 
 // 处理表单提交成功
 const handleSuccess = () => {
+  // 刷新部门列表
   fetchDepartments()
+  // 刷新下拉选择框中的部门列表
   fetchAllDepartments()
+  // 显示成功提示
+  ElMessage.success('操作成功')
 }
 
 // 初始化

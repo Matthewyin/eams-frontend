@@ -160,6 +160,11 @@ import { userApi } from '@/api/user'
 import { useUserStore } from '@/store/modules/user'
 import { formatDate } from '@/utils/format'
 import { Edit, Check, Close } from '@element-plus/icons-vue'
+import { useRoute, useRouter } from 'vue-router'
+
+// 获取路由对象
+const route = useRoute()
+const router = useRouter()
 
 // 状态
 const loading = ref(false)
@@ -332,6 +337,13 @@ const submitPasswordForm = async () => {
           newPassword: '',
           confirmPassword: ''
         }
+        
+        // 检查是否是强制修改密码场景
+        if (route.query.forceChange === 'true') {
+          ElMessage.success('初始密码修改成功，请使用新密码登录系统')
+          // 如果是从首次登录跳转过来的，修改密码成功后跳转到首页
+          router.push('/dashboard')
+        }
       } else {
         ElMessage.error(response.data?.message || '密码修改失败')
       }
@@ -357,6 +369,26 @@ const submitPasswordForm = async () => {
 // 初始化
 onMounted(() => {
   fetchUserInfo()
+  
+  // 检查URL参数，如果存在forceChange=true参数，则自动打开修改密码对话框
+  if (route.query.forceChange === 'true') {
+    // 显示强制修改密码对话框
+    ElMessageBox.alert(
+      '为了保护您的账户安全，请修改初始密码。',
+      '首次登录安全提示',
+      {
+        confirmButtonText: '确定',
+        type: 'warning',
+        callback: () => {
+          // 自动打开修改密码对话框
+          handleChangePassword()
+          
+          // 移除URL参数但不刷新页面
+          router.replace({ path: '/profile' })
+        }
+      }
+    )
+  }
 })
 </script>
 

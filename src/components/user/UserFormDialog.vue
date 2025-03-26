@@ -85,6 +85,13 @@
           show-password
           placeholder="留空则使用系统默认密码"
         />
+        <div class="form-tip">留空则使用系统默认密码：12345678</div>
+      </el-form-item>
+
+      <el-form-item label="密码设置" v-if="!user">
+        <el-checkbox v-model="form.requirePasswordChange">
+          要求用户首次登录时必须修改密码
+        </el-checkbox>
       </el-form-item>
     </el-form>
     
@@ -179,7 +186,8 @@ const form = ref({
   groupIds: [],
   roles: [],
   status: 1,
-  password: ''
+  password: '',
+  requirePasswordChange: false
 })
 
 // 加载部门数据
@@ -215,11 +223,11 @@ const rules = {
     { required: true, message: '请输入姓名', trigger: 'blur' }
   ],
   email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
+    { required: false, message: '请输入邮箱', trigger: 'blur' },
     { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
   ],
   phone: [
-    { required: true, message: '请输入手机号', trigger: 'blur' },
+    { required: false, message: '请输入手机号', trigger: 'blur' },
     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
   ],
   departmentId: [
@@ -249,7 +257,8 @@ const resetForm = () => {
     groupIds: [],
     roles: [],
     status: 1,
-    password: ''
+    password: '',
+    requirePasswordChange: false
   }
   if (formRef.value) {
     formRef.value.resetFields()
@@ -308,7 +317,8 @@ watch(() => props.user, (newVal) => {
       groupIds: newVal.groupIds || [],
       roles: newVal.roles || [],
       status: newVal.status !== undefined ? newVal.status : 1,
-      password: '' // 编辑时不需要密码
+      password: '', // 编辑时不需要密码
+      requirePasswordChange: newVal.requirePasswordChange || false
     }
   } else {
     resetForm()
@@ -360,7 +370,8 @@ const submitForm = async () => {
           departmentId: formData.departmentId,
           groupIds: formData.groupIds,
           roles: formData.roles,
-          status: formData.status
+          status: formData.status,
+          requirePasswordChange: formData.requirePasswordChange
         }
         
         // 更新用户
@@ -388,5 +399,11 @@ const submitForm = async () => {
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
+}
+
+.form-tip {
+  font-size: 0.8em;
+  color: #909399;
+  margin-top: 5px;
 }
 </style>

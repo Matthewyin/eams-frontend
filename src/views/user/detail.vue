@@ -37,12 +37,22 @@
       </div>
     </div>
 
+    <div v-if="showDebugInfo" class="debug-info">
+      <h3>调试信息</h3>
+      <div><strong>账户锁定状态 (accountNonLocked):</strong> {{ userDetail?.accountNonLocked }}</div>
+      <div><strong>完整用户数据:</strong></div>
+      <pre>{{ JSON.stringify(userDetail, null, 2) }}</pre>
+    </div>
+
     <el-row :gutter="20">
       <el-col :xs="24" :sm="24" :md="16" :lg="16" :xl="16">
         <el-card class="detail-card" v-loading="loading">
           <template #header>
             <div class="card-header">
               <h3>基本信息</h3>
+              <el-button type="text" @click="toggleDebugInfo">
+                {{ showDebugInfo ? '隐藏调试信息' : '显示调试信息' }}
+              </el-button>
             </div>
           </template>
           
@@ -57,7 +67,7 @@
                 <el-tag :type="userDetail.status === 1 ? 'success' : 'danger'">
                   {{ userDetail.status === 1 ? '启用' : '禁用' }}
                 </el-tag>
-                <el-tag v-if="userDetail.locked" type="warning" class="ml-5">
+                <el-tag v-if="!userDetail.accountNonLocked" type="warning" class="ml-5">
                   账户锁定
                 </el-tag>
               </el-descriptions-item>
@@ -182,7 +192,7 @@
               type="warning" 
               @click="handleUnlockAccount" 
               v-permission="'user:edit'"
-              :disabled="loading || !userDetail?.locked"
+              :disabled="loading || userDetail?.accountNonLocked"
               block
               class="mt-10"
             >
@@ -251,6 +261,9 @@ const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726
 // 对话框控制
 const dialogVisible = ref(false)
 
+// 调试信息控制
+const showDebugInfo = ref(false)
+
 // 获取角色列表
 const fetchRoles = async () => {
   try {
@@ -272,6 +285,16 @@ const fetchUserDetail = async () => {
   try {
     const res = await userApi.getUser(userId.value)
     userDetail.value = res.data
+    
+    // 添加调试信息
+    console.log('用户详情数据:', userDetail.value)
+    console.log('账户锁定状态字段:', {
+      accountNonLocked: userDetail.value.accountNonLocked,
+      // 检查是否有拼写错误的字段名
+      accountNoneLocked: userDetail.value.accountNoneLocked
+    })
+    
+    // 后端返回的status已经是Integer类型，无需转换
   } catch (error) {
     console.error('获取用户详情失败:', error)
     ElMessage.error('获取用户详情失败')
@@ -391,10 +414,10 @@ const handleUpdateAvatar = () => {
           if (isCurrentUser.value) {
             userStore.updateUserInfo({ avatar: value })
           }
-          } else {
-            ElMessage.error(response.data?.message || '头像更新失败')
-          }
-        })
+        } else {
+          ElMessage.error(response.data?.message || '头像更新失败')
+        }
+      })
         .catch(error => {
           console.error('更新头像失败:', error)
           ElMessage.error('更新头像失败')
@@ -410,7 +433,7 @@ const handleUpdateAvatar = () => {
 
 // 处理解锁用户账户
 const handleUnlockAccount = () => {
-  if (!userDetail.value || !userDetail.value.locked) {
+  if (!userDetail.value || userDetail.value.accountNonLocked) {
     ElMessage.info('该用户账户未锁定')
     return
   }
@@ -431,7 +454,7 @@ const handleUnlockAccount = () => {
           if (response.data && response.data.success) {
             ElMessage.success('账户解锁成功')
             // 更新本地用户详情
-            userDetail.value.locked = false
+            userDetail.value.accountNonLocked = true
             userDetail.value.loginFailCount = 0
             userDetail.value.lockTime = null
             // 刷新用户详情
@@ -501,6 +524,11 @@ const handleAvatarFileChange = (file) => {
     .finally(() => {
       avatarLoading.value = false
     })
+}
+
+// 切换调试信息
+const toggleDebugInfo = () => {
+  showDebugInfo.value = !showDebugInfo.value
 }
 
 // 初始化
@@ -612,5 +640,19 @@ onMounted(() => {
 
 .avatar-upload :deep(.el-button) {
   width: 100%;
+}
+
+.debug-info {
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #f8f8f8;
+  border-radius: 4px;
+  overflow: auto;
+  max-height: 300px;
+}
+
+.debug-info pre {
+  margin: 0;
+  white-space: pre-wrap;
 }
 </style>

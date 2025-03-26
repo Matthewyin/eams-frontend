@@ -104,7 +104,7 @@ const handleLogin = async () => {
     console.log('登录响应:', response)
 
     // 处理不同的登录状态
-    const { token, userInfo, status, remainingAttempts, unlockTime } = response.data || {}
+    const { token, userInfo, status, remainingAttempts, unlockTime, requirePasswordChange } = response.data || {}
     
     // 根据登录状态处理不同情况
     if (status === 'LOCKED') {
@@ -139,6 +139,15 @@ const handleLogin = async () => {
       }
 
       ElMessage.success('登录成功')
+      
+      // 检查是否需要修改密码
+      if (requirePasswordChange) {
+        console.log('用户需要修改密码')
+        ElMessage.warning('首次登录，请修改密码')
+        // 跳转到修改密码页面
+        await router.push('/profile?tab=password&forceChange=true')
+        return
+      }
     } else {
       // 未知状态
       throw new Error('登录失败：未获取到认证令牌')

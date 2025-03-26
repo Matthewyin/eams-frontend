@@ -267,6 +267,17 @@ const fetchUsers = async () => {
     
     const res = await userApi.getUsers(params)
     userList.value = res.data.content || []
+    
+    // 添加调试信息
+    if (userList.value.length > 0) {
+      console.log('用户列表第一项:', userList.value[0])
+      console.log('账户锁定状态字段:', {
+        accountNonLocked: userList.value[0].accountNonLocked
+      })
+    }
+    
+    // 后端返回的status已经是Integer类型，无需转换
+    
     pagination.total = res.data.totalElements || 0
   } catch (error) {
     console.error('获取用户列表失败:', error)

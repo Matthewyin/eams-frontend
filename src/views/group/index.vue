@@ -169,7 +169,7 @@ const router = useRouter()
 const checkAdminPermission = () => {
   const userRoles = userStore.userInfo.roles || []
   const isAdmin = userRoles.some(role => 
-    ['admin', 'administrator', 'ADMIN', 'SUPER_ADMIN'].includes(role)
+    ['admin', 'administrator', 'ADMIN', 'SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN'].includes(role)
   )
   
   if (!isAdmin) {
@@ -364,7 +364,10 @@ const handleColumnChange = () => {
 
 // 处理表单提交成功
 const handleSuccess = () => {
+  // 刷新用户组列表
   fetchGroups()
+  // 显示成功提示
+  ElMessage.success('操作成功')
 }
 
 // 初始化

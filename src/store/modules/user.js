@@ -23,8 +23,15 @@ export const useUserStore = defineStore('user', () => {
             return false
         }
         
-        // 如果用户是超级管理员，有所有权限
-        if (userInfo.value.roles && (userInfo.value.roles.includes('admin') || userInfo.value.roles.includes('administrator'))) {
+        // 如果用户是超级管理员或管理员，有所有权限
+        if (userInfo.value.roles && (
+            userInfo.value.roles.includes('admin') || 
+            userInfo.value.roles.includes('administrator') ||
+            userInfo.value.roles.includes('ADMIN') ||
+            userInfo.value.roles.includes('SUPER_ADMIN') ||
+            userInfo.value.roles.includes('ROLE_ADMIN') ||
+            userInfo.value.roles.includes('ROLE_SUPER_ADMIN')
+        )) {
             return true
         }
         
